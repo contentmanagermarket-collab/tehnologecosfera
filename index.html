@@ -19,9 +19,7 @@
       --radius: 16px;
     }
 
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
 
     body {
       margin: 0;
@@ -105,16 +103,6 @@
       background: #fff;
     }
 
-    .row {
-      display: flex;
-      gap: 12px;
-      margin-bottom: 12px;
-    }
-
-    .field {
-      flex: 1;
-    }
-
     label {
       display: block;
       margin-bottom: 6px;
@@ -123,7 +111,6 @@
       color: var(--muted);
     }
 
-    input,
     textarea {
       width: 100%;
       border: 1px solid var(--border);
@@ -134,18 +121,14 @@
       outline: none;
       transition: border-color 0.2s ease, box-shadow 0.2s ease;
       background: #fff;
-    }
-
-    input:focus,
-    textarea:focus {
-      border-color: var(--green);
-      box-shadow: 0 0 0 3px rgba(13, 136, 0, 0.12);
-    }
-
-    textarea {
       min-height: 90px;
       resize: vertical;
       margin-bottom: 12px;
+    }
+
+    textarea:focus {
+      border-color: var(--green);
+      box-shadow: 0 0 0 3px rgba(13, 136, 0, 0.12);
     }
 
     .actions {
@@ -172,13 +155,8 @@
       transition: background 0.2s ease, transform 0.1s ease;
     }
 
-    button:hover {
-      background: var(--green-dark);
-    }
-
-    button:active {
-      transform: translateY(1px);
-    }
+    button:hover { background: var(--green-dark); }
+    button:active { transform: translateY(1px); }
 
     button:disabled {
       background: #9db39a;
@@ -186,9 +164,7 @@
     }
 
     @media (max-width: 640px) {
-      body {
-        padding: 0;
-      }
+      body { padding: 0; }
 
       .app {
         height: 100vh;
@@ -196,21 +172,13 @@
         max-width: 100%;
       }
 
-      .row,
-      .actions {
-        flex-direction: column;
-      }
-
-      .message {
-        max-width: 92%;
-      }
-
-      button {
-        width: 100%;
-      }
+      .actions { flex-direction: column; }
+      .message { max-width: 92%; }
+      button { width: 100%; }
     }
   </style>
 </head>
+
 <body>
   <div class="app">
     <div class="header">
@@ -219,22 +187,15 @@
     </div>
 
     <div class="chat" id="chat">
-      <div class="message bot">Здравствуйте! Введите ваш ID как пароль, затем напишите задачу.</div>
+      <div class="message bot">Здравствуйте! Напишите задачу: например, составить меню на 7 дней для вахты 100 человек или подобрать варианты питания под определённый бюджет.</div>
     </div>
 
     <div class="composer">
-      <div class="row">
-        <div class="field">
-          <label for="sessionId">ID / пароль</label>
-          <input id="sessionId" type="text" placeholder="Например: technolog_ivanova">
-        </div>
-      </div>
-
       <label for="userMessage">Сообщение</label>
-      <textarea id="userMessage" placeholder="Например: составь меню на 14 дней для вахты 120 человек на 2000 ккал в день"></textarea>
+      <textarea id="userMessage" placeholder="Например: составь меню на 14 дней для вахты 120 человек с ограничением по бюджету"></textarea>
 
       <div class="actions">
-        <div class="hint">ID вводится вручную и закреплен за каждым сотрудником</div>
+        <div class="hint">Сайт автоматически передаёт ID сотрудника в sessionId.</div>
         <button id="sendButton" onclick="sendRequest()">Отправить</button>
       </div>
     </div>
@@ -244,6 +205,16 @@
     const chat = document.getElementById('chat');
     const sendButton = document.getElementById('sendButton');
 
+    let employeeId = localStorage.getItem('employeeId');
+
+    if (!employeeId) {
+      employeeId = prompt('Введите ваш ID сотрудника, например technolog_ivanova');
+      if (!employeeId || !employeeId.trim()) {
+        employeeId = 'web_user_' + Date.now();
+      }
+      localStorage.setItem('employeeId', employeeId.trim());
+    }
+
     function addMessage(text, type) {
       const div = document.createElement('div');
       div.className = `message ${type}`;
@@ -252,24 +223,28 @@
       chat.scrollTop = chat.scrollHeight;
     }
 
+    function extractAnswer(data) {
+      if (typeof data === 'string') return data;
+
+      return (
+        data.output ||
+        data.text ||
+        data.response ||
+        data.answer ||
+        data.message ||
+        data.result ||
+        JSON.stringify(data, null, 2)
+      );
+    }
+
     async function sendRequest() {
-      const sessionIdField = document.getElementById('sessionId');
       const userMessageField = document.getElementById('userMessage');
-
-      const sessionId = sessionIdField.value.trim();
       const userMessage = userMessageField.value.trim();
-
-      if (!sessionId) {
-        alert('Введите ID / пароль.');
-        return;
-      }
 
       if (!userMessage) {
         alert('Введите сообщение.');
         return;
       }
-
-      const message = `Ты — ассистент-технолог общественного питания компании «Экосфера». Помоги мне составить меню и ответить на вопрос сотрудника. Вопрос: ${userMessage}`;
 
       addMessage(userMessage, 'user');
       userMessageField.value = '';
@@ -283,13 +258,22 @@
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
-            chatInput: message,
-            sessionId: sessionId
+            chatInput: userMessage,
+            sessionId: employeeId
           })
         });
 
-        const data = await response.text();
-        addMessage(data || 'Ответ пустой.', 'bot');
+        const contentType = response.headers.get('content-type') || '';
+        let data;
+
+        if (contentType.includes('application/json')) {
+          data = await response.json();
+        } else {
+          data = await response.text();
+        }
+
+        addMessage(extractAnswer(data) || 'Ответ пустой.', 'bot');
+
       } catch (error) {
         addMessage('Ошибка при запросе: ' + error.message, 'bot');
       } finally {
