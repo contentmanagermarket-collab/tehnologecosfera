@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>АССИСТЕНТ ТЕХНОЛОГА</title>
+  <style>
+    :root {
+      --bg: #f4f6f3;
+      --card: #ffffff;
+      --text: #1f2a1f;
+      --muted: #647067;
+      --border: #d9e0d6;
+      --green: #0d8800;
+      --green-dark: #0b6e00;
+      --user: #eaf7e7;
+      --bot: #f1f4f1;
+      --shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+      --radius: 16px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      font-family: Arial, sans-serif;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .app {
+      width: 100%;
+      max-width: 760px;
+      height: 88vh;
+      background: var(--card);
+      border-radius: 24px;
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+
+    .header {
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--border);
+      background: linear-gradient(180deg, #ffffff 0%, #f8fbf7 100%);
+    }
+
+    .title {
+      margin: 0 0 6px;
+      font-size: 24px;
+      line-height: 1.2;
+    }
+
+    .subtitle {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .chat {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      background: #fcfdfc;
+    }
+
+    .message {
+      max-width: 82%;
+      padding: 14px 16px;
+      border-radius: var(--radius);
+      line-height: 1.5;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-size: 15px;
+    }
+
+    .message.user {
+      align-self: flex-end;
+      background: var(--user);
+      border-bottom-right-radius: 6px;
+    }
+
+    .message.bot {
+      align-self: flex-start;
+      background: var(--bot);
+      border-bottom-left-radius: 6px;
+    }
+
+    .composer {
+      border-top: 1px solid var(--border);
+      padding: 16px;
+      background: #fff;
+    }
+
+    .row {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .field {
+      flex: 1;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--muted);
+    }
+
+    input,
+    textarea {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px 14px;
+      font-size: 14px;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+      background: #fff;
+    }
+
+    input:focus,
+    textarea:focus {
+      border-color: var(--green);
+      box-shadow: 0 0 0 3px rgba(13, 136, 0, 0.12);
+    }
+
+    textarea {
+      min-height: 90px;
+      resize: vertical;
+      margin-bottom: 12px;
+    }
+
+    .actions {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .hint {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    button {
+      border: none;
+      border-radius: 12px;
+      padding: 14px 20px;
+      background: var(--green);
+      color: #fff;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.2s ease, transform 0.1s ease;
+    }
+
+    button:hover {
+      background: var(--green-dark);
+    }
+
+    button:active {
+      transform: translateY(1px);
+    }
+
+    button:disabled {
+      background: #9db39a;
+      cursor: not-allowed;
+    }
+
+    @media (max-width: 640px) {
+      body {
+        padding: 0;
+      }
+
+      .app {
+        height: 100vh;
+        border-radius: 0;
+        max-width: 100%;
+      }
+
+      .row,
+      .actions {
+        flex-direction: column;
+      }
+
+      .message {
+        max-width: 92%;
+      }
+
+      button {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="header">
+      <h1 class="title">Чат технолога Экосфера</h1>
+      <p class="subtitle">Составит меню под ваш запрос</p>
+    </div>
+
+    <div class="chat" id="chat">
+      <div class="message bot">Здравствуйте! Напишите задачу: например, составить меню на 7 дней для вахты 100 человек или подобрать варианты питания под определённый бюджет.</div>
+    </div>
+
+    <div class="composer">
+      <div class="row">
+        <div class="field">
+          <label for="sessionId">ID сессии</label>
+          <input id="sessionId" type="text" value="technolog_001">
+        </div>
+      </div>
+
+      <label for="userMessage">Сообщение</label>
+      <textarea id="userMessage" placeholder="Например: составь меню на 14 дней для вахты 120 человек с ограничением по бюджету"></textarea>
+
+      <div class="actions">
+        <div class="hint">Сообщение отправляется в n8n webhook и обрабатывается RAG-агентом.</div>
+        <button id="sendButton" onclick="sendRequest()">Отправить</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const chat = document.getElementById('chat');
+    const sendButton = document.getElementById('sendButton');
+
+    function addMessage(text, type) {
+      const div = document.createElement('div');
+      div.className = `message ${type}`;
+      div.textContent = text;
+      chat.appendChild(div);
+      chat.scrollTop = chat.scrollHeight;
+    }
+
+    async function sendRequest() {
+      const userMessageField = document.getElementById('userMessage');
+      const sessionIdField = document.getElementById('sessionId');
+
+      const userMessage = userMessageField.value.trim();
+      const sessionId = sessionIdField.value.trim() || 'technolog_001';
+
+      if (!userMessage) {
+        alert('Введите сообщение.');
+        return;
+      }
+
+      const chatInput = `Ты — ассистент-технолог общественного питания компании «Экосфера». Помоги мне составить меню и ответить на вопрос сотрудника. Вопрос: ${userMessage}`;
+
+      addMessage(userMessage, 'user');
+      userMessageField.value = '';
+      sendButton.disabled = true;
+      sendButton.textContent = 'Отправка...';
+
+      try {
+        const response = await fetch('https://kruglovaproai.ru/webhook-test/bf4dd093-bb02-472c-9454-7ab9af97bd1d', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            chatInput,
+            sessionId
+          })
+        });
+
+        const data = await response.text();
+        addMessage(data || 'Ответ пустой.', 'bot');
+      } catch (error) {
+        addMessage('Ошибка при запросе: ' + error.message, 'bot');
+      } finally {
+        sendButton.disabled = false;
+        sendButton.textContent = 'Отправить';
+      }
+    }
+
+    document.getElementById('userMessage').addEventListener('keydown', function(event) {
+      if (event.key === 'Enter' && !event.shiftKey) {
+        event.preventDefault();
+        sendRequest();
+      }
+    });
+  </script>
+</body>
+</html>
