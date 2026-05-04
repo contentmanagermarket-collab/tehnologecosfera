@@ -214,27 +214,27 @@
 <body>
   <div class="app">
     <div class="header">
-      <h1 class="title">Чат технолога Экосфера</h1>
+      <h1 class="title">АССИСТЕНТ ТЕХНОЛОГА</h1>
       <p class="subtitle">Составит меню под ваш запрос</p>
     </div>
 
     <div class="chat" id="chat">
-      <div class="message bot">Здравствуйте! Напишите задачу: например, составить меню на 7 дней для вахты 100 человек или подобрать варианты питания под определённый бюджет.</div>
+      <div class="message bot">Здравствуйте! Введите ваш ID как пароль, затем напишите задачу.</div>
     </div>
 
     <div class="composer">
       <div class="row">
         <div class="field">
-          <label for="sessionId">ID сессии</label>
-          <input id="sessionId" type="text" value="technolog_001">
+          <label for="sessionId">ID / пароль</label>
+          <input id="sessionId" type="text" placeholder="Например: technolog_ivanova">
         </div>
       </div>
 
       <label for="userMessage">Сообщение</label>
-      <textarea id="userMessage" placeholder="Например: составь меню на 14 дней для вахты 120 человек с ограничением по бюджету"></textarea>
+      <textarea id="userMessage" placeholder="Например: составь меню на 14 дней для вахты 120 человек на 2000 ккал в день"></textarea>
 
       <div class="actions">
-        <div class="hint">Сообщение отправляется в n8n webhook и обрабатывается RAG-агентом.</div>
+        <div class="hint">ID вводится вручную и закреплен за каждым сотрудником</div>
         <button id="sendButton" onclick="sendRequest()">Отправить</button>
       </div>
     </div>
@@ -253,18 +253,23 @@
     }
 
     async function sendRequest() {
-      const userMessageField = document.getElementById('userMessage');
       const sessionIdField = document.getElementById('sessionId');
+      const userMessageField = document.getElementById('userMessage');
 
+      const sessionId = sessionIdField.value.trim();
       const userMessage = userMessageField.value.trim();
-      const sessionId = sessionIdField.value.trim() || 'technolog_001';
+
+      if (!sessionId) {
+        alert('Введите ID / пароль.');
+        return;
+      }
 
       if (!userMessage) {
         alert('Введите сообщение.');
         return;
       }
 
-      const chatInput = `Ты — ассистент-технолог общественного питания компании «Экосфера». Помоги мне составить меню и ответить на вопрос сотрудника. Вопрос: ${userMessage}`;
+      const message = `Ты — ассистент-технолог общественного питания компании «Экосфера». Помоги мне составить меню и ответить на вопрос сотрудника. Вопрос: ${userMessage}`;
 
       addMessage(userMessage, 'user');
       userMessageField.value = '';
@@ -272,14 +277,14 @@
       sendButton.textContent = 'Отправка...';
 
       try {
-        const response = await fetch('https://kruglovaproai.ru/webhook-test/bf4dd093-bb02-472c-9454-7ab9af97bd1d', {
+        const response = await fetch('https://kruglovaproai.ru/webhook/bf4dd093-bb02-472c-9454-7ab9af97bd1d', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
-            chatInput,
-            sessionId
+            chatInput: message,
+            sessionId: sessionId
           })
         });
 
