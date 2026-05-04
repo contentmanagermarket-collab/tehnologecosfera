@@ -52,18 +52,8 @@
       background: linear-gradient(180deg, #ffffff 0%, #f8fbf7 100%);
     }
 
-    .title {
-      margin: 0 0 6px;
-      font-size: 24px;
-      line-height: 1.2;
-    }
-
-    .subtitle {
-      margin: 0;
-      color: var(--muted);
-      font-size: 14px;
-      line-height: 1.5;
-    }
+    .title { margin: 0 0 6px; font-size: 24px; }
+    .subtitle { margin: 0; color: var(--muted); font-size: 14px; }
 
     .chat {
       flex: 1;
@@ -79,23 +69,12 @@
       max-width: 82%;
       padding: 14px 16px;
       border-radius: var(--radius);
-      line-height: 1.5;
       white-space: pre-wrap;
-      word-break: break-word;
       font-size: 15px;
     }
 
-    .message.user {
-      align-self: flex-end;
-      background: var(--user);
-      border-bottom-right-radius: 6px;
-    }
-
-    .message.bot {
-      align-self: flex-start;
-      background: var(--bot);
-      border-bottom-left-radius: 6px;
-    }
+    .user { align-self: flex-end; background: var(--user); }
+    .bot { align-self: flex-start; background: var(--bot); }
 
     .composer {
       border-top: 1px solid var(--border);
@@ -103,44 +82,24 @@
       background: #fff;
     }
 
-    label {
-      display: block;
-      margin-bottom: 6px;
-      font-size: 13px;
-      font-weight: 700;
-      color: var(--muted);
-    }
+    .row { display: flex; gap: 12px; margin-bottom: 12px; }
+    .field { flex: 1; }
 
-    textarea {
+    label { font-size: 13px; font-weight: 700; color: var(--muted); }
+
+    input, textarea {
       width: 100%;
       border: 1px solid var(--border);
       border-radius: 12px;
-      padding: 12px 14px;
+      padding: 12px;
       font-size: 14px;
-      font-family: inherit;
-      outline: none;
-      transition: border-color 0.2s ease, box-shadow 0.2s ease;
-      background: #fff;
-      min-height: 90px;
-      resize: vertical;
-      margin-bottom: 12px;
     }
 
-    textarea:focus {
-      border-color: var(--green);
-      box-shadow: 0 0 0 3px rgba(13, 136, 0, 0.12);
-    }
+    textarea { min-height: 90px; margin-bottom: 12px; }
 
     .actions {
       display: flex;
-      align-items: center;
       justify-content: space-between;
-      gap: 12px;
-    }
-
-    .hint {
-      font-size: 12px;
-      color: var(--muted);
     }
 
     button {
@@ -149,145 +108,94 @@
       padding: 14px 20px;
       background: var(--green);
       color: #fff;
-      font-size: 15px;
       font-weight: 700;
       cursor: pointer;
-      transition: background 0.2s ease, transform 0.1s ease;
     }
 
-    button:hover { background: var(--green-dark); }
-    button:active { transform: translateY(1px); }
-
-    button:disabled {
-      background: #9db39a;
-      cursor: not-allowed;
-    }
-
-    @media (max-width: 640px) {
-      body { padding: 0; }
-
-      .app {
-        height: 100vh;
-        border-radius: 0;
-        max-width: 100%;
-      }
-
-      .actions { flex-direction: column; }
-      .message { max-width: 92%; }
-      button { width: 100%; }
-    }
+    button:disabled { background: #9db39a; }
   </style>
 </head>
-
 <body>
-  <div class="app">
-    <div class="header">
-      <h1 class="title">АССИСТЕНТ ТЕХНОЛОГА</h1>
-      <p class="subtitle">Составит меню под ваш запрос</p>
-    </div>
 
-    <div class="chat" id="chat">
-      <div class="message bot">Здравствуйте! Напишите задачу: например, составить меню на 7 дней для вахты 100 человек или подобрать варианты питания под определённый бюджет.</div>
-    </div>
-
-    <div class="composer">
-      <label for="userMessage">Сообщение</label>
-      <textarea id="userMessage" placeholder="Например: составь меню на 14 дней для вахты 120 человек с ограничением по бюджету"></textarea>
-
-      <div class="actions">
-        <div class="hint">Сайт автоматически передаёт ID сотрудника в sessionId.</div>
-        <button id="sendButton" onclick="sendRequest()">Отправить</button>
-      </div>
-    </div>
+<div class="app">
+  <div class="header">
+    <h1 class="title">АССИСТЕНТ ТЕХНОЛОГА</h1>
+    <p class="subtitle">Составит меню под ваш запрос</p>
   </div>
 
-  <script>
-    const chat = document.getElementById('chat');
-    const sendButton = document.getElementById('sendButton');
+  <div class="chat" id="chat">
+    <div class="message bot">Введите ID и задачу</div>
+  </div>
 
-    let employeeId = localStorage.getItem('employeeId');
+  <div class="composer">
+    <div class="row">
+      <div class="field">
+        <label>ID</label>
+        <input id="sessionId" placeholder="technolog_ivanova">
+      </div>
+    </div>
 
-    if (!employeeId) {
-      employeeId = prompt('Введите ваш ID сотрудника, например technolog_ivanova');
-      if (!employeeId || !employeeId.trim()) {
-        employeeId = 'web_user_' + Date.now();
-      }
-      localStorage.setItem('employeeId', employeeId.trim());
-    }
+    <textarea id="userMessage" placeholder="Составь меню на 7 дней..."></textarea>
 
-    function addMessage(text, type) {
-      const div = document.createElement('div');
-      div.className = `message ${type}`;
-      div.textContent = text;
-      chat.appendChild(div);
-      chat.scrollTop = chat.scrollHeight;
-    }
+    <div class="actions">
+      <button id="sendButton" onclick="sendRequest()">Отправить</button>
+    </div>
+  </div>
+</div>
 
-    function extractAnswer(data) {
-      if (typeof data === 'string') return data;
+<script>
+const chat = document.getElementById('chat');
+const sendButton = document.getElementById('sendButton');
 
-      return (
-        data.output ||
-        data.text ||
-        data.response ||
-        data.answer ||
-        data.message ||
-        data.result ||
-        JSON.stringify(data, null, 2)
-      );
-    }
+function addMessage(text, type) {
+  const div = document.createElement('div');
+  div.className = 'message ' + type;
+  div.textContent = text;
+  chat.appendChild(div);
+  chat.scrollTop = chat.scrollHeight;
+}
 
-    async function sendRequest() {
-      const userMessageField = document.getElementById('userMessage');
-      const userMessage = userMessageField.value.trim();
+async function sendRequest() {
+  const sessionId = document.getElementById('sessionId').value.trim();
+  const userMessage = document.getElementById('userMessage').value.trim();
 
-      if (!userMessage) {
-        alert('Введите сообщение.');
-        return;
-      }
+  if (!sessionId || !userMessage) {
+    alert('Заполни поля');
+    return;
+  }
 
-      addMessage(userMessage, 'user');
-      userMessageField.value = '';
-      sendButton.disabled = true;
-      sendButton.textContent = 'Отправка...';
+  addMessage(userMessage, 'user');
+  document.getElementById('userMessage').value = '';
 
-      try {
-        const response = await fetch('https://kruglovaproai.ru/webhook/bf4dd093-bb02-472c-9454-7ab9af97bd1d', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            chatInput: userMessage,
-            sessionId: employeeId
-          })
-        });
+  sendButton.disabled = true;
 
-        const contentType = response.headers.get('content-type') || '';
-        let data;
-
-        if (contentType.includes('application/json')) {
-          data = await response.json();
-        } else {
-          data = await response.text();
-        }
-
-        addMessage(extractAnswer(data) || 'Ответ пустой.', 'bot');
-
-      } catch (error) {
-        addMessage('Ошибка при запросе: ' + error.message, 'bot');
-      } finally {
-        sendButton.disabled = false;
-        sendButton.textContent = 'Отправить';
-      }
-    }
-
-    document.getElementById('userMessage').addEventListener('keydown', function(event) {
-      if (event.key === 'Enter' && !event.shiftKey) {
-        event.preventDefault();
-        sendRequest();
-      }
+  try {
+    const response = await fetch('https://kruglovaproai.ru/webhook/bf4dd093-bb02-472c-9454-7ab9af97bd1d', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chatInput: userMessage,
+        sessionId: sessionId
+      })
     });
-  </script>
+
+    const data = await response.json();
+
+    const text =
+      data.output ||
+      data.text ||
+      data.response ||
+      JSON.stringify(data);
+
+    addMessage(text, 'bot');
+
+  } catch (e) {
+    addMessage('Ошибка: ' + e.message, 'bot');
+  }
+
+  sendButton.disabled = false;
+}
+</script>
+
 </body>
 </html>
