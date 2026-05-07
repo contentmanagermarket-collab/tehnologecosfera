@@ -179,15 +179,18 @@ async function sendRequest() {
       })
     });
 
-    const data = await response.json();
+    const contentType = response.headers.get('content-type') || '';
 
-    const text =
-      data.output ||
-      data.text ||
-      data.response ||
-      JSON.stringify(data);
+let text;
 
-    addMessage(text, 'bot');
+if (contentType.includes('application/json')) {
+  const data = await response.json();
+  text = data.output || data.text || data.response || JSON.stringify(data, null, 2);
+} else {
+  text = await response.text();
+}
+
+addMessage(text || 'Ответ пустой.', 'bot');
 
   } catch (e) {
     addMessage('Ошибка: ' + e.message, 'bot');
