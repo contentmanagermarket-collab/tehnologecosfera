@@ -2,20 +2,30 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>AI-ассистент деловых писем</title>
+
   <style>
+    * {
+      box-sizing: border-box;
+    }
+
     body {
       margin: 0;
       font-family: Arial, sans-serif;
       background: #f4f6f8;
       color: #1f2933;
+      height: 100vh;
+      overflow: hidden;
     }
 
     .app {
       max-width: 900px;
       margin: 0 auto;
       padding: 24px;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
     }
 
     .header {
@@ -38,14 +48,16 @@
     }
 
     .chat {
+      flex: 1;
+      overflow-y: auto;
       background: #ffffff;
       border-radius: 18px;
       padding: 20px;
-      min-height: 420px;
       box-shadow: 0 4px 18px rgba(0,0,0,0.06);
       display: flex;
       flex-direction: column;
       gap: 14px;
+      scroll-behavior: smooth;
     }
 
     .message {
@@ -53,6 +65,7 @@
       border-radius: 14px;
       line-height: 1.5;
       white-space: pre-wrap;
+      word-break: break-word;
     }
 
     .user {
@@ -71,27 +84,39 @@
       margin-top: 16px;
       display: flex;
       gap: 10px;
+      align-items: stretch;
     }
 
     textarea {
       flex: 1;
-      min-height: 80px;
+      min-height: 120px;
+      max-height: 220px;
       resize: vertical;
-      padding: 14px;
-      border-radius: 14px;
+      padding: 16px;
+      border-radius: 16px;
       border: 1px solid #d0d7de;
       font-size: 15px;
       font-family: Arial, sans-serif;
+      outline: none;
+    }
+
+    textarea:focus {
+      border-color: #0b7a3b;
     }
 
     button {
-      width: 160px;
+      width: 180px;
       border: none;
-      border-radius: 14px;
+      border-radius: 16px;
       background: #0b7a3b;
       color: white;
-      font-size: 15px;
+      font-size: 16px;
       cursor: pointer;
+      transition: 0.2s;
+    }
+
+    button:hover {
+      opacity: 0.92;
     }
 
     button:disabled {
@@ -103,36 +128,95 @@
       margin-top: 10px;
       color: #6b7280;
       font-size: 13px;
+      text-align: center;
+    }
+
+    @media (max-width: 700px) {
+      .app {
+        padding: 12px;
+      }
+
+      .input-box {
+        flex-direction: column;
+      }
+
+      button {
+        width: 100%;
+        height: 50px;
+      }
+
+      .user,
+      .bot {
+        max-width: 100%;
+      }
     }
   </style>
 </head>
+
 <body>
   <div class="app">
+
     <div class="header">
       <h1>AI-ассистент деловых писем</h1>
-      <p>Помогает составлять, переписывать и улучшать деловые письма в стиле компании ЭкоСфера.</p>
+
+      <p>
+        Помогает составлять, переписывать и улучшать деловые письма
+        в стиле компании ЭкоСфера.
+      </p>
     </div>
 
     <div id="chat" class="chat">
-      <div class="message bot">Здравствуйте. Опишите, какое письмо нужно подготовить.</div>
+
+      <div class="message bot">
+Здравствуйте. Для подготовки письма укажите:
+
+1. Цель письма
+2. Контекст ситуации
+3. Кому направляется письмо
+4. Основные тезисы
+5. Какой результат нужен
+6. Важные юридические, бухгалтерские или организационные нюансы
+      </div>
+
     </div>
 
     <div class="input-box">
-      <textarea id="message" placeholder="Например: нужно написать письмо подрядчику по задержке документов"></textarea>
-      <button id="sendBtn" onclick="sendMessage()">Отправить</button>
+
+      <textarea
+        id="message"
+        placeholder="ВВЕДИТЕ ДАННЫЕ ДЛЯ ПИСЬМА В СООТВЕТСТВИИ СО СПИСКОМ ВОПРОСОВ"></textarea>
+
+      <button
+        id="sendBtn"
+        onclick="sendMessage()">
+        Отправить
+      </button>
+
     </div>
 
-    <div class="hint">История диалога сохраняется в рамках этого браузера.</div>
+    <div class="hint">
+      История диалога сохраняется в рамках этого браузера.
+    </div>
+
   </div>
 
   <script>
+
     const WEBHOOK_URL = "https://kruglovaproai.ru/webhook/business-email-agent";
 
     let sessionId = localStorage.getItem("businessEmailAgentSessionId");
 
     if (!sessionId) {
-      sessionId = "session_" + Date.now() + "_" + Math.random().toString(36).slice(2);
-      localStorage.setItem("businessEmailAgentSessionId", sessionId);
+      sessionId =
+        "session_" +
+        Date.now() +
+        "_" +
+        Math.random().toString(36).slice(2);
+
+      localStorage.setItem(
+        "businessEmailAgentSessionId",
+        sessionId
+      );
     }
 
     const chat = document.getElementById("chat");
@@ -140,29 +224,39 @@
     const sendBtn = document.getElementById("sendBtn");
 
     function addMessage(text, type) {
+
       const div = document.createElement("div");
+
       div.className = "message " + type;
       div.textContent = text;
+
       chat.appendChild(div);
+
       chat.scrollTop = chat.scrollHeight;
     }
 
     async function sendMessage() {
+
       const message = textarea.value.trim();
 
       if (!message) return;
 
       addMessage(message, "user");
+
       textarea.value = "";
+
       sendBtn.disabled = true;
       sendBtn.textContent = "Жду ответ";
 
       try {
+
         const response = await fetch(WEBHOOK_URL, {
           method: "POST",
+
           headers: {
             "Content-Type": "application/json"
           },
+
           body: JSON.stringify({
             sessionId,
             userId: sessionId,
@@ -173,24 +267,41 @@
         const data = await response.json();
 
         if (data.answer) {
+
           addMessage(data.answer, "bot");
+
         } else {
-          addMessage("Ответ пришёл, но поле answer пустое. Проверь Respond to Webhook в n8n.", "bot");
+
+          addMessage(
+            "Ответ пришёл, но поле answer пустое. Проверь Respond to Webhook в n8n.",
+            "bot"
+          );
         }
+
       } catch (error) {
-        addMessage("Ошибка соединения с агентом. Проверь webhook и CORS в n8n.", "bot");
+
+        addMessage(
+          "Ошибка соединения с агентом. Проверь webhook и CORS в n8n.",
+          "bot"
+        );
       }
 
       sendBtn.disabled = false;
       sendBtn.textContent = "Отправить";
+
+      textarea.focus();
     }
 
     textarea.addEventListener("keydown", function(event) {
+
       if (event.key === "Enter" && !event.shiftKey) {
+
         event.preventDefault();
+
         sendMessage();
       }
     });
+
   </script>
 </body>
 </html>
