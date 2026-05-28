@@ -1,1 +1,196 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI-ассистент деловых писем</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f4f6f8;
+      color: #1f2933;
+    }
 
+    .app {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    .header {
+      background: #ffffff;
+      padding: 20px;
+      border-radius: 18px;
+      box-shadow: 0 4px 18px rgba(0,0,0,0.06);
+      margin-bottom: 16px;
+    }
+
+    .header h1 {
+      margin: 0 0 8px;
+      font-size: 24px;
+    }
+
+    .header p {
+      margin: 0;
+      color: #5f6b7a;
+      line-height: 1.4;
+    }
+
+    .chat {
+      background: #ffffff;
+      border-radius: 18px;
+      padding: 20px;
+      min-height: 420px;
+      box-shadow: 0 4px 18px rgba(0,0,0,0.06);
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .message {
+      padding: 14px 16px;
+      border-radius: 14px;
+      line-height: 1.5;
+      white-space: pre-wrap;
+    }
+
+    .user {
+      background: #e7f0ff;
+      align-self: flex-end;
+      max-width: 80%;
+    }
+
+    .bot {
+      background: #f1f3f5;
+      align-self: flex-start;
+      max-width: 90%;
+    }
+
+    .input-box {
+      margin-top: 16px;
+      display: flex;
+      gap: 10px;
+    }
+
+    textarea {
+      flex: 1;
+      min-height: 80px;
+      resize: vertical;
+      padding: 14px;
+      border-radius: 14px;
+      border: 1px solid #d0d7de;
+      font-size: 15px;
+      font-family: Arial, sans-serif;
+    }
+
+    button {
+      width: 160px;
+      border: none;
+      border-radius: 14px;
+      background: #0b7a3b;
+      color: white;
+      font-size: 15px;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      background: #9ca3af;
+      cursor: not-allowed;
+    }
+
+    .hint {
+      margin-top: 10px;
+      color: #6b7280;
+      font-size: 13px;
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="header">
+      <h1>AI-ассистент деловых писем</h1>
+      <p>Помогает составлять, переписывать и улучшать деловые письма в стиле компании ЭкоСфера.</p>
+    </div>
+
+    <div id="chat" class="chat">
+      <div class="message bot">Здравствуйте. Опишите, какое письмо нужно подготовить.</div>
+    </div>
+
+    <div class="input-box">
+      <textarea id="message" placeholder="Например: нужно написать письмо подрядчику по задержке документов"></textarea>
+      <button id="sendBtn" onclick="sendMessage()">Отправить</button>
+    </div>
+
+    <div class="hint">История диалога сохраняется в рамках этого браузера.</div>
+  </div>
+
+  <script>
+    const WEBHOOK_URL = "https://kruglovaproai.ru/webhook/business-email-agent";
+
+    let sessionId = localStorage.getItem("businessEmailAgentSessionId");
+
+    if (!sessionId) {
+      sessionId = "session_" + Date.now() + "_" + Math.random().toString(36).slice(2);
+      localStorage.setItem("businessEmailAgentSessionId", sessionId);
+    }
+
+    const chat = document.getElementById("chat");
+    const textarea = document.getElementById("message");
+    const sendBtn = document.getElementById("sendBtn");
+
+    function addMessage(text, type) {
+      const div = document.createElement("div");
+      div.className = "message " + type;
+      div.textContent = text;
+      chat.appendChild(div);
+      chat.scrollTop = chat.scrollHeight;
+    }
+
+    async function sendMessage() {
+      const message = textarea.value.trim();
+
+      if (!message) return;
+
+      addMessage(message, "user");
+      textarea.value = "";
+      sendBtn.disabled = true;
+      sendBtn.textContent = "Жду ответ";
+
+      try {
+        const response = await fetch(WEBHOOK_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            sessionId,
+            userId: sessionId,
+            message
+          })
+        });
+
+        const data = await response.json();
+
+        if (data.answer) {
+          addMessage(data.answer, "bot");
+        } else {
+          addMessage("Ответ пришёл, но поле answer пустое. Проверь Respond to Webhook в n8n.", "bot");
+        }
+      } catch (error) {
+        addMessage("Ошибка соединения с агентом. Проверь webhook и CORS в n8n.", "bot");
+      }
+
+      sendBtn.disabled = false;
+      sendBtn.textContent = "Отправить";
+    }
+
+    textarea.addEventListener("keydown", function(event) {
+      if (event.key === "Enter" && !event.shiftKey) {
+        event.preventDefault();
+        sendMessage();
+      }
+    });
+  </script>
+</body>
+</html>
