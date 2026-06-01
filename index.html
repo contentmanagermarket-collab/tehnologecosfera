@@ -103,10 +103,30 @@
       overflow: visible;
     }
 
+    .message h2 {
+      margin: 22px 0 12px;
+      font-size: 26px;
+      line-height: 1.25;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .message h3 {
+      margin: 16px 0 8px;
+      font-size: 21px;
+      line-height: 1.25;
+      font-weight: 700;
+      color: var(--green);
+    }
+
+    .message strong {
+      font-weight: 700;
+    }
+
     .message table {
       border-collapse: collapse;
       width: 100%;
-      margin: 14px 0;
+      margin: 12px 0 18px;
       background: #fff;
       font-size: 15px;
       table-layout: auto;
@@ -125,12 +145,13 @@
     .message th {
       background: #eef5ec;
       font-weight: 700;
+      color: var(--text);
     }
 
     .table-wrap {
       width: 100%;
       overflow-x: auto;
-      margin: 12px 0;
+      margin: 10px 0 16px;
     }
 
     .composer {
@@ -232,6 +253,14 @@
         padding: 12px 14px;
       }
 
+      .message h2 {
+        font-size: 22px;
+      }
+
+      .message h3 {
+        font-size: 18px;
+      }
+
       .message.user {
         max-width: 92%;
       }
@@ -297,6 +326,10 @@ function escapeHtml(text) {
     .replaceAll("'", '&#039;');
 }
 
+function inlineMarkdown(text) {
+  return escapeHtml(text).replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+}
+
 function markdownTablesToHtml(text) {
   const lines = String(text).split('\n');
   let html = '';
@@ -304,6 +337,18 @@ function markdownTablesToHtml(text) {
 
   while (i < lines.length) {
     const line = lines[i];
+
+    if (line.startsWith('### ')) {
+      html += '<h3>' + inlineMarkdown(line.replace('### ', '').trim()) + '</h3>';
+      i++;
+      continue;
+    }
+
+    if (line.startsWith('## ')) {
+      html += '<h2>' + inlineMarkdown(line.replace('## ', '').trim()) + '</h2>';
+      i++;
+      continue;
+    }
 
     if (
       line.includes('|') &&
@@ -323,21 +368,21 @@ function markdownTablesToHtml(text) {
 
       html += '<div class="table-wrap"><table><thead><tr>';
       headerCells.forEach(cell => {
-        html += '<th>' + escapeHtml(cell) + '</th>';
+        html += '<th>' + inlineMarkdown(cell) + '</th>';
       });
       html += '</tr></thead><tbody>';
 
       rows.forEach(row => {
         html += '<tr>';
         row.forEach(cell => {
-          html += '<td>' + escapeHtml(cell) + '</td>';
+          html += '<td>' + inlineMarkdown(cell) + '</td>';
         });
         html += '</tr>';
       });
 
       html += '</tbody></table></div>';
     } else {
-      html += escapeHtml(line) + '\n';
+      html += inlineMarkdown(line) + '\n';
       i++;
     }
   }
