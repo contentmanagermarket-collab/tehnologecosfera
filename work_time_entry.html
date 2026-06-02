@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Учет рабочего времени</title>
+
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Arial, sans-serif;
+      background: #f4f6f2;
+      color: #2e2e2e;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 24px;
+    }
+
+    .card {
+      width: 100%;
+      max-width: 520px;
+      background: #ffffff;
+      border-radius: 28px;
+      padding: 32px;
+      box-shadow: 0 18px 45px rgba(0, 0, 0, 0.08);
+    }
+
+    .logo {
+      display: block;
+      max-width: 280px;
+      width: 100%;
+      margin: 0 auto 28px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 28px;
+      line-height: 1.15;
+      text-align: center;
+      color: #2e2e2e;
+      letter-spacing: 0.5px;
+    }
+
+    .subtitle {
+      margin: 10px 0 30px;
+      text-align: center;
+      font-size: 18px;
+      color: #6a6a6a;
+    }
+
+    label {
+      display: block;
+      margin: 18px 0 8px;
+      font-size: 15px;
+      font-weight: 700;
+      color: #2e2e2e;
+    }
+
+    input,
+    textarea {
+      width: 100%;
+      border: 1px solid #dfe5d8;
+      border-radius: 16px;
+      padding: 15px 16px;
+      font-size: 16px;
+      font-family: Arial, sans-serif;
+      outline: none;
+      background: #ffffff;
+    }
+
+    input:focus,
+    textarea:focus {
+      border-color: #96c22c;
+      box-shadow: 0 0 0 4px rgba(150, 194, 44, 0.18);
+    }
+
+    textarea {
+      min-height: 120px;
+      resize: vertical;
+    }
+
+    .upload-box {
+      margin-top: 8px;
+      border: 2px dashed #96c22c;
+      border-radius: 20px;
+      padding: 22px;
+      text-align: center;
+      background: #fbfff3;
+    }
+
+    .file-input {
+      display: none;
+    }
+
+    .upload-button {
+      display: inline-block;
+      padding: 14px 22px;
+      border-radius: 999px;
+      background: #96c22c;
+      color: #ffffff;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      border: none;
+    }
+
+    .file-name {
+      margin-top: 12px;
+      font-size: 14px;
+      color: #6a6a6a;
+      word-break: break-word;
+    }
+
+    .preview {
+      display: none;
+      margin-top: 16px;
+      width: 100%;
+      max-height: 260px;
+      object-fit: cover;
+      border-radius: 18px;
+      border: 1px solid #e6ecd9;
+    }
+
+    .submit-button {
+      width: 100%;
+      margin-top: 26px;
+      padding: 16px;
+      border: none;
+      border-radius: 18px;
+      background: #96c22c;
+      color: #ffffff;
+      font-size: 17px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .submit-button:hover,
+    .upload-button:hover {
+      background: #86ad25;
+    }
+
+    @media (max-width: 520px) {
+      body { padding: 14px; align-items: flex-start; }
+      .card { padding: 24px 18px; border-radius: 22px; }
+      h1 { font-size: 23px; }
+      .subtitle { font-size: 16px; }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="card">
+    <img class="logo" src="logo.png" alt="Экосфера" />
+
+    <h1>УЧЕТ РАБОЧЕГО ВРЕМЕНИ</h1>
+    <div class="subtitle">Контроль смены</div>
+
+    <form id="shiftForm">
+      <label for="employee">Сотрудник</label>
+      <input id="employee" name="employee" type="text" placeholder="Введите ФИО" required />
+
+      <label for="comment">Комментарий</label>
+      <textarea id="comment" name="comment" placeholder="Введите комментарий"></textarea>
+
+      <label for="photo">Фото</label>
+      <div class="upload-box">
+        <input class="file-input" id="photo" name="photo" type="file" accept="image/*" />
+        <label class="upload-button" for="photo">Загрузить фото</label>
+        <div class="file-name" id="fileName">Файл не выбран</div>
+        <img class="preview" id="preview" alt="Предпросмотр фото" />
+      </div>
+
+      <button class="submit-button" type="submit">Отправить</button>
+    </form>
+  </main>
+
+  <script>
+    const photoInput = document.getElementById('photo');
+    const fileName = document.getElementById('fileName');
+    const preview = document.getElementById('preview');
+
+    photoInput.addEventListener('change', () => {
+      const file = photoInput.files[0];
+
+      if (!file) {
+        fileName.textContent = 'Файл не выбран';
+        preview.style.display = 'none';
+        preview.src = '';
+        return;
+      }
+
+      fileName.textContent = file.name;
+
+      const reader = new FileReader();
+      reader.onload = event => {
+        preview.src = event.target.result;
+        preview.style.display = 'block';
+      };
+
+      reader.readAsDataURL(file);
+    });
+
+    document.getElementById('shiftForm').addEventListener('submit', event => {
+      event.preventDefault();
+      alert('Форма готова. Следующим шагом подключим отправку на backend.');
+    });
+  </script>
+</body>
+</html>
