@@ -177,7 +177,14 @@
     </form>
   </main>
 
+  <!-- Supabase JS SDK подключение -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
+    // Настройка клиента Supabase
+    const SUPABASE_URL = 'https://yhipguyfkwmszcxlpgvz.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_UOnF4Il-LMG_K-wOeYoysw_ISaQ9rjA';
+    const supabase = supabaseJs.createClient(SUPABASE_URL, SUPABASE_KEY);
+
     const photoInput = document.getElementById('photo');
     const fileName = document.getElementById('fileName');
     const preview = document.getElementById('preview');
@@ -203,9 +210,35 @@
       reader.readAsDataURL(file);
     });
 
-    document.getElementById('shiftForm').addEventListener('submit', event => {
+    document.getElementById('shiftForm').addEventListener('submit', async event => {
       event.preventDefault();
-      alert('Форма готова. Следующим шагом подключим отправку на backend.');
+
+      const employee = document.getElementById('employee').value.trim();
+      const comment = document.getElementById('comment').value.trim();
+      const file = photoInput.files[0];
+
+      if (!employee || !file) {
+        alert('Пожалуйста, заполните ФИО и загрузите фото.');
+        return;
+      }
+
+      const fileExt = file.name.split('.').pop();
+      const filePath = `shift_photos/${Date.now()}_${employee.replace(/\s+/g, '_')}.${fileExt}`;
+
+      // Загрузка в Supabase Storage
+      const { data, error } = await supabase.storage.from('shift_photos').upload(filePath, file);
+
+      if (error) {
+        alert('Ошибка при загрузке фото: ' + error.message);
+        return;
+      }
+
+      const { data: publicURLData } = supabase.storage.from('shift_photos').getPublicUrl(filePath);
+      const publicURL = publicURLData.publicUrl;
+
+      alert('Фото успешно загружено! URL: ' + publicURL);
+
+      // Здесь можно отправить employee, comment, publicURL на backend/MongoDB для сохранения
     });
   </script>
 </body>
