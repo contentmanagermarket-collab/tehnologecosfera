@@ -264,6 +264,16 @@
 
         alert('Фото успешно загружено в Supabase.');
 
+        document.getElementById('shiftForm').reset();
+
+        fileName.textContent = 'Файл не выбран';
+        preview.style.display = 'none';
+        preview.src = '';
+
+        setTimeout(() => {
+          location.reload();
+        }, 500);
+
       } catch (error) {
         console.error(error);
         alert('Ошибка загрузки: ' + error.message);
