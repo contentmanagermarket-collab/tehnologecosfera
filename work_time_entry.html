@@ -7,6 +7,7 @@
 
   <style>
     * { box-sizing: border-box; }
+
     body {
       margin: 0;
       min-height: 100vh;
@@ -233,19 +234,15 @@
 
       try {
         const fileExt = file.name.split('.').pop().toLowerCase();
-        const safeEmployee = employee
-          .replace(/[^a-zA-Zа-яА-Я0-9ёЁ]/g, '_')
-          .replace(/_+/g, '_');
-
-        const filePath = `shift_photos/${Date.now()}_${safeEmployee}.${fileExt}`;
+        const randomId = crypto.randomUUID();
+        const filePath = `shift_photos/${randomId}.${fileExt}`;
 
         const { data, error } = await supabaseClient
           .storage
           .from('work_photos')
           .upload(filePath, file, {
             cacheControl: '3600',
-            upsert: false,
-            contentType: file.type
+            upsert: true
           });
 
         if (error) {
