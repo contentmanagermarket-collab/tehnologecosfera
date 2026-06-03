@@ -222,16 +222,16 @@
       }
 
       const fileExt = file.name.split('.').pop();
-      const filePath = `shift_photos/${Date.now()}_${employee.replace(/\s+/g, '_')}.${fileExt}`;
+      const filePath = `work_photos/${Date.now()}_${employee.replace(/\s+/g, '_')}.${fileExt}`;
 
-      const { data, error } = await supabase.storage.from('shift_photos').upload(filePath, file);
+      const { data, error } = await supabase.storage.from('work_photos').upload(filePath, file);
 
       if (error) {
         alert('Ошибка при загрузке фото: ' + error.message);
         return;
       }
 
-      const { data: publicURLData } = supabase.storage.from('shift_photos').getPublicUrl(filePath);
+      const { data: publicURLData } = supabase.storage.from('work_photos').getPublicUrl(filePath);
       const publicURL = publicURLData.publicUrl;
 
       alert('Фото успешно загружено! URL: ' + publicURL);
