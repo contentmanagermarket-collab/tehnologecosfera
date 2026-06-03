@@ -125,9 +125,15 @@
       border: 1px solid #e6ecd9;
     }
 
+    .action-buttons {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 26px;
+    }
+
     .submit-button {
       width: 100%;
-      margin-top: 26px;
       padding: 16px;
       border: none;
       border-radius: 18px;
@@ -138,9 +144,17 @@
       cursor: pointer;
     }
 
+    .submit-button.stop {
+      background: #6a6a6a;
+    }
+
     .submit-button:hover,
     .upload-button:hover {
       background: #86ad25;
+    }
+
+    .submit-button.stop:hover {
+      background: #555555;
     }
 
     @media (max-width: 520px) {
@@ -148,6 +162,7 @@
       .card { padding: 24px 18px; border-radius: 22px; }
       h1 { font-size: 23px; }
       .subtitle { font-size: 16px; }
+      .action-buttons { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -174,7 +189,10 @@
         <img class="preview" id="preview" alt="Предпросмотр фото" />
       </div>
 
-      <button class="submit-button" id="submitButton" type="submit">Отправить</button>
+      <div class="action-buttons">
+        <button class="submit-button" type="submit" data-action="start">Открыть смену</button>
+        <button class="submit-button stop" type="submit" data-action="stop">Закрыть смену</button>
+      </div>
     </form>
   </main>
 
@@ -183,13 +201,22 @@
   <script>
     const SUPABASE_URL = 'https://yhipguyfkwmszcxlpgvz.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_UOnF4Il-LMG_K-wOeYoysw_ISaQ9rjA';
+    const BACKEND_URL = 'https://ekosfera.midera.fun/web/submit_shift';
 
     const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     const photoInput = document.getElementById('photo');
     const fileName = document.getElementById('fileName');
     const preview = document.getElementById('preview');
-    const submitButton = document.getElementById('submitButton');
+    const actionButtons = document.querySelectorAll('.submit-button');
+
+    let selectedAction = '';
+
+    actionButtons.forEach(button => {
+      button.addEventListener('click', () => {
+        selectedAction = button.dataset.action;
+      });
+    });
 
     photoInput.addEventListener('change', () => {
       const file = photoInput.files[0];
@@ -220,7 +247,7 @@
       const file = photoInput.files[0];
 
       if (!employee) {
-        alert('Введите ФИО сотрудника.');
+        alert('Введите ФИО сотрудника. Формат: Иванов Иван Петрович');
         return;
       }
 
@@ -229,8 +256,15 @@
         return;
       }
 
-      submitButton.disabled = true;
-      submitButton.textContent = 'Загрузка...';
+      if (!selectedAction) {
+        alert('Выберите действие: открыть смену или закрыть смену.');
+        return;
+      }
+
+      actionButtons.forEach(button => {
+        button.disabled = true;
+        button.textContent = 'Загрузка...';
+      });
 
       try {
         const fileExt = file.name.split('.').pop().toLowerCase();
@@ -256,19 +290,34 @@
 
         const photoUrl = publicUrlData.publicUrl;
 
-        console.log({
-          employee,
-          comment,
-          photoUrl
+        const response = await fetch(BACKEND_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            employee,
+            comment,
+            photoUrl,
+            action: selectedAction
+          })
         });
 
-        alert(`Фото успешно загружено в Supabase.\n\nСсылка на фото:\n${photoUrl}`);
+        const result = await response.json();
+
+        if (!result.success) {
+          alert(result.message);
+          return;
+        }
+
+        alert(result.message);
 
         document.getElementById('shiftForm').reset();
 
         fileName.textContent = 'Файл не выбран';
         preview.style.display = 'none';
         preview.src = '';
+        selectedAction = '';
 
         setTimeout(() => {
           location.reload();
@@ -276,10 +325,13 @@
 
       } catch (error) {
         console.error(error);
-        alert('Ошибка загрузки: ' + error.message);
+        alert('Ошибка: ' + error.message);
       } finally {
-        submitButton.disabled = false;
-        submitButton.textContent = 'Отправить';
+        actionButtons[0].disabled = false;
+        actionButtons[0].textContent = 'Открыть смену';
+
+        actionButtons[1].disabled = false;
+        actionButtons[1].textContent = 'Закрыть смену';
       }
     });
   </script>
