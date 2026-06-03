@@ -167,26 +167,28 @@
 
       <label for="photo">Фото</label>
       <div class="upload-box">
-        <input class="file-input" id="photo" name="photo" type="file" accept="image/*" />
+        <input class="file-input" id="photo" name="photo" type="file" accept="image/jpeg,image/png,image/webp" />
         <label class="upload-button" for="photo">Загрузить фото</label>
         <div class="file-name" id="fileName">Файл не выбран</div>
         <img class="preview" id="preview" alt="Предпросмотр фото" />
       </div>
 
-      <button class="submit-button" type="submit">Отправить</button>
+      <button class="submit-button" id="submitButton" type="submit">Отправить</button>
     </form>
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
   <script>
-    // Supabase client configuration
     const SUPABASE_URL = 'https://yhipguyfkwmszcxlpgvz.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_UOnF4Il-LMG_K-wOeYoysw_ISaQ9rjA';
-    const supabase = supabaseJs.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     const photoInput = document.getElementById('photo');
     const fileName = document.getElementById('fileName');
     const preview = document.getElementById('preview');
+    const submitButton = document.getElementById('submitButton');
 
     photoInput.addEventListener('change', () => {
       const file = photoInput.files[0];
@@ -216,27 +218,62 @@
       const comment = document.getElementById('comment').value.trim();
       const file = photoInput.files[0];
 
-      if (!employee || !file) {
-        alert('Пожалуйста, заполните ФИО и загрузите фото.');
+      if (!employee) {
+        alert('Введите ФИО сотрудника.');
         return;
       }
 
-      const fileExt = file.name.split('.').pop();
-      const filePath = `work_photos/${Date.now()}_${employee.replace(/\s+/g, '_')}.${fileExt}`;
-
-      const { data, error } = await supabase.storage.from('work_photos').upload(filePath, file);
-
-      if (error) {
-        alert('Ошибка при загрузке фото: ' + error.message);
+      if (!file) {
+        alert('Загрузите фото.');
         return;
       }
 
-      const { data: publicURLData } = supabase.storage.from('work_photos').getPublicUrl(filePath);
-      const publicURL = publicURLData.publicUrl;
+      submitButton.disabled = true;
+      submitButton.textContent = 'Загрузка...';
 
-      alert('Фото успешно загружено! URL: ' + publicURL);
+      try {
+        const fileExt = file.name.split('.').pop().toLowerCase();
+        const safeEmployee = employee
+          .replace(/[^a-zA-Zа-яА-Я0-9ёЁ]/g, '_')
+          .replace(/_+/g, '_');
 
-      // TODO: send employee, comment, publicURL to backend/MongoDB
+        const filePath = `shift_photos/${Date.now()}_${safeEmployee}.${fileExt}`;
+
+        const { data, error } = await supabaseClient
+          .storage
+          .from('work_photos')
+          .upload(filePath, file, {
+            cacheControl: '3600',
+            upsert: false,
+            contentType: file.type
+          });
+
+        if (error) {
+          throw error;
+        }
+
+        const { data: publicUrlData } = supabaseClient
+          .storage
+          .from('work_photos')
+          .getPublicUrl(filePath);
+
+        const photoUrl = publicUrlData.publicUrl;
+
+        console.log({
+          employee,
+          comment,
+          photoUrl
+        });
+
+        alert('Фото успешно загружено в Supabase.');
+
+      } catch (error) {
+        console.error(error);
+        alert('Ошибка загрузки: ' + error.message);
+      } finally {
+        submitButton.disabled = false;
+        submitButton.textContent = 'Отправить';
+      }
     });
   </script>
 </body>
