@@ -203,6 +203,9 @@
     const SUPABASE_KEY = 'sb_publishable_UOnF4Il-LMG_K-wOeYoysw_ISaQ9rjA';
     const BACKEND_URL = 'https://ekosfera.midera.fun/web/submit_shift';
 
+    const urlParams = new URLSearchParams(window.location.search);
+    const branchId = urlParams.get('branch_id') || '';
+
     const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     const photoInput = document.getElementById('photo');
@@ -299,7 +302,8 @@
             employee,
             comment,
             photoUrl,
-            action: selectedAction
+            action: selectedAction,
+            branch_id: branchId
           })
         });
 
