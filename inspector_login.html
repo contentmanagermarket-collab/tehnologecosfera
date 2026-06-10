@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Вход проверяющего</title>
+
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Arial, sans-serif;
+      background: #f4f6f2;
+      color: #2e2e2e;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 24px;
+    }
+
+    .card {
+      width: 100%;
+      max-width: 480px;
+      background: #ffffff;
+      border-radius: 28px;
+      padding: 32px;
+      box-shadow: 0 18px 45px rgba(0, 0, 0, 0.08);
+    }
+
+    .logo {
+      display: block;
+      max-width: 260px;
+      width: 100%;
+      margin: 0 auto 28px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 26px;
+      line-height: 1.15;
+      text-align: center;
+      color: #2e2e2e;
+    }
+
+    .subtitle {
+      margin: 10px 0 30px;
+      text-align: center;
+      font-size: 17px;
+      color: #6a6a6a;
+    }
+
+    label {
+      display: block;
+      margin: 18px 0 8px;
+      font-size: 15px;
+      font-weight: 700;
+      color: #2e2e2e;
+    }
+
+    input {
+      width: 100%;
+      border: 1px solid #dfe5d8;
+      border-radius: 16px;
+      padding: 15px 16px;
+      font-size: 16px;
+      font-family: Arial, sans-serif;
+      outline: none;
+      background: #ffffff;
+    }
+
+    input:focus {
+      border-color: #96c22c;
+      box-shadow: 0 0 0 4px rgba(150, 194, 44, 0.18);
+    }
+
+    button {
+      width: 100%;
+      margin-top: 24px;
+      padding: 16px;
+      border: none;
+      border-radius: 18px;
+      background: #96c22c;
+      color: #ffffff;
+      font-size: 17px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #86ad25;
+    }
+
+    .message {
+      display: none;
+      margin-top: 16px;
+      padding: 14px 16px;
+      border-radius: 16px;
+      font-size: 15px;
+      background: #fff3f0;
+      color: #9d321f;
+    }
+
+    @media (max-width: 520px) {
+      body { padding: 14px; align-items: flex-start; }
+      .card { padding: 24px 18px; border-radius: 22px; }
+      h1 { font-size: 23px; }
+      .subtitle { font-size: 16px; }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="card">
+    <img class="logo" src="logo.png" alt="Экосфера" />
+
+    <h1>КАБИНЕТ ПРОВЕРЯЮЩЕГО</h1>
+    <div class="subtitle">Вход по коду доступа</div>
+
+    <form id="loginForm">
+      <label for="token">Код доступа</label>
+      <input id="token" name="token" type="password" placeholder="Введите код доступа" required />
+
+      <button id="loginButton" type="submit">Войти</button>
+      <div class="message" id="message"></div>
+    </form>
+  </main>
+
+  <script>
+    const BACKEND_URL = 'https://ekosfera.midera.fun/web';
+
+    const loginForm = document.getElementById('loginForm');
+    const loginButton = document.getElementById('loginButton');
+    const message = document.getElementById('message');
+
+    function showMessage(text) {
+      message.textContent = text;
+      message.style.display = 'block';
+    }
+
+    loginForm.addEventListener('submit', async event => {
+      event.preventDefault();
+
+      const token = document.getElementById('token').value.trim();
+
+      if (!token) {
+        showMessage('Введите код доступа.');
+        return;
+      }
+
+      loginButton.disabled = true;
+      loginButton.textContent = 'Проверка...';
+      message.style.display = 'none';
+
+      try {
+        const response = await fetch(`${BACKEND_URL}/inspector/login`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ token })
+        });
+
+        const result = await response.json();
+
+        if (!result.success) {
+          showMessage(result.message || 'Не удалось войти.');
+          return;
+        }
+
+        localStorage.setItem('inspector_token', result.token);
+        window.location.href = `inspector_panel.html?token=${encodeURIComponent(result.token)}`;
+      } catch (error) {
+        console.error(error);
+        showMessage('Ошибка подключения. Попробуйте еще раз.');
+      } finally {
+        loginButton.disabled = false;
+        loginButton.textContent = 'Войти';
+      }
+    });
+  </script>
+</body>
+</html>
