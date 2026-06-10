@@ -101,6 +101,32 @@
       margin-bottom: 18px;
     }
 
+    .filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+
+    .filter-button {
+      padding: 12px 16px;
+      border: 1px solid #dfe5d8;
+      border-radius: 999px;
+      background: #ffffff;
+      color: #2e2e2e;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: none;
+    }
+
+    .filter-button:hover,
+    .filter-button.active {
+      border-color: #96c22c;
+      background: #96c22c;
+      color: #ffffff;
+    }
+
     .summary-item,
     .shift-card,
     .empty,
@@ -319,6 +345,13 @@
       </div>
     </section>
 
+    <section class="filters" aria-label="Фильтры смен">
+      <button class="filter-button active" type="button" data-filter="all">Все</button>
+      <button class="filter-button" type="button" data-filter="open">Открытия</button>
+      <button class="filter-button" type="button" data-filter="close">Закрытия</button>
+      <button class="filter-button" type="button" data-filter="close_delay">Следующий день</button>
+    </section>
+
     <div class="message" id="message"></div>
     <div class="empty" id="empty">Смен на проверке сейчас нет.</div>
     <section class="shift-list" id="shiftList"></section>
@@ -338,11 +371,15 @@
     const empty = document.getElementById('empty');
     const refreshButton = document.getElementById('refreshButton');
     const logoutButton = document.getElementById('logoutButton');
+    const filterButtons = document.querySelectorAll('.filter-button');
 
     const totalCount = document.getElementById('totalCount');
     const openCount = document.getElementById('openCount');
     const closeCount = document.getElementById('closeCount');
     const delayCount = document.getElementById('delayCount');
+
+    let allShifts = [];
+    let activeFilter = 'all';
 
     function showMessage(text) {
       message.textContent = text;
@@ -506,15 +543,24 @@
       return `<div class="card-actions">${buttons.join('')}</div>`;
     }
 
-    function renderShifts(shifts) {
+    function visibleShifts() {
+      if (activeFilter === 'all') {
+        return allShifts;
+      }
+
+      return allShifts.filter(item => item.status === activeFilter);
+    }
+
+    function renderShifts() {
+      const shifts = visibleShifts();
       const openItems = shifts.filter(item => item.status === 'open');
       const closeItems = shifts.filter(item => item.status === 'close');
       const delayItems = shifts.filter(item => item.status === 'close_delay');
 
-      totalCount.textContent = shifts.length;
-      openCount.textContent = openItems.length;
-      closeCount.textContent = closeItems.length;
-      delayCount.textContent = delayItems.length;
+      totalCount.textContent = allShifts.length;
+      openCount.textContent = allShifts.filter(item => item.status === 'open').length;
+      closeCount.textContent = allShifts.filter(item => item.status === 'close').length;
+      delayCount.textContent = allShifts.filter(item => item.status === 'close_delay').length;
 
       shiftList.innerHTML = '';
       empty.style.display = shifts.length ? 'none' : 'block';
@@ -583,13 +629,15 @@
           localStorage.removeItem('inspector_token');
           showMessage(result.message || 'Доступ запрещен.');
           inspectorMeta.textContent = 'Нет доступа';
-          renderShifts([]);
+          allShifts = [];
+          renderShifts();
           return;
         }
 
         localStorage.setItem('inspector_token', token);
         inspectorMeta.textContent = `${result.inspector.name || 'Проверяющий'} · филиалов: ${result.branches.length}`;
-        renderShifts(result.shifts || []);
+        allShifts = result.shifts || [];
+        renderShifts();
       } catch (error) {
         console.error(error);
         showMessage('Ошибка загрузки смен. Попробуйте обновить страницу.');
@@ -600,6 +648,18 @@
     }
 
     refreshButton.addEventListener('click', loadShifts);
+
+    filterButtons.forEach(button => {
+      button.addEventListener('click', () => {
+        activeFilter = button.dataset.filter;
+
+        filterButtons.forEach(item => {
+          item.classList.toggle('active', item === button);
+        });
+
+        renderShifts();
+      });
+    });
 
     shiftList.addEventListener('click', event => {
       const button = event.target.closest('button[data-action]');
