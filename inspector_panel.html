@@ -127,6 +127,27 @@
       color: #ffffff;
     }
 
+    .search-row {
+      margin-bottom: 18px;
+    }
+
+    .search-input {
+      width: 100%;
+      border: 1px solid #dfe5d8;
+      border-radius: 18px;
+      padding: 15px 16px;
+      font-size: 16px;
+      font-family: Arial, sans-serif;
+      outline: none;
+      background: #ffffff;
+      box-shadow: 0 12px 34px rgba(0, 0, 0, 0.04);
+    }
+
+    .search-input:focus {
+      border-color: #96c22c;
+      box-shadow: 0 0 0 4px rgba(150, 194, 44, 0.18);
+    }
+
     .summary-item,
     .shift-card,
     .empty,
@@ -352,6 +373,10 @@
       <button class="filter-button" type="button" data-filter="close_delay">Следующий день</button>
     </section>
 
+    <section class="search-row">
+      <input class="search-input" id="employeeSearch" type="search" placeholder="Поиск по сотруднику или филиалу" />
+    </section>
+
     <div class="message" id="message"></div>
     <div class="empty" id="empty">Смен на проверке сейчас нет.</div>
     <section class="shift-list" id="shiftList"></section>
@@ -372,6 +397,7 @@
     const refreshButton = document.getElementById('refreshButton');
     const logoutButton = document.getElementById('logoutButton');
     const filterButtons = document.querySelectorAll('.filter-button');
+    const employeeSearch = document.getElementById('employeeSearch');
 
     const totalCount = document.getElementById('totalCount');
     const openCount = document.getElementById('openCount');
@@ -380,6 +406,7 @@
 
     let allShifts = [];
     let activeFilter = 'all';
+    let searchQuery = '';
 
     function showMessage(text) {
       message.textContent = text;
@@ -544,11 +571,24 @@
     }
 
     function visibleShifts() {
-      if (activeFilter === 'all') {
-        return allShifts;
+      let shifts = allShifts;
+
+      if (activeFilter !== 'all') {
+        shifts = shifts.filter(item => item.status === activeFilter);
       }
 
-      return allShifts.filter(item => item.status === activeFilter);
+      if (searchQuery) {
+        shifts = shifts.filter(item => {
+          const searchable = [
+            item.user_name,
+            item.branch_name
+          ].join(' ').toLowerCase();
+
+          return searchable.includes(searchQuery);
+        });
+      }
+
+      return shifts;
     }
 
     function renderShifts() {
@@ -573,7 +613,7 @@
           <div class="shift-head">
             <div>
               <div class="employee">${escapeHtml(shift.user_name)}</div>
-              <div class="branch">${escapeHtml(shift.branch_name)} · ${escapeHtml(shift.branch_code)}</div>
+              <div class="branch">${escapeHtml(shift.branch_name)}</div>
             </div>
             <div class="status ${escapeHtml(shift.status)}">${statusText(shift.status)}</div>
           </div>
@@ -659,6 +699,11 @@
 
         renderShifts();
       });
+    });
+
+    employeeSearch.addEventListener('input', () => {
+      searchQuery = employeeSearch.value.trim().toLowerCase();
+      renderShifts();
     });
 
     shiftList.addEventListener('click', event => {
