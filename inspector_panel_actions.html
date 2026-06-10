@@ -78,12 +78,20 @@
       background: #6a6a6a;
     }
 
+    button.danger {
+      background: #bd4b36;
+    }
+
     button:hover {
       background: #86ad25;
     }
 
     button.secondary:hover {
       background: #555555;
+    }
+
+    button.danger:hover {
+      background: #a33d2a;
     }
 
     .summary {
@@ -225,6 +233,13 @@
       gap: 10px;
     }
 
+    .card-actions {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 14px;
+    }
+
     .photo {
       display: block;
       overflow: hidden;
@@ -263,6 +278,7 @@
       .summary { grid-template-columns: 1fr; }
       .details { grid-template-columns: 1fr; }
       .photos { grid-template-columns: 1fr; }
+      .card-actions { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -371,6 +387,125 @@
       `;
     }
 
+    async function sendShiftAction(shiftId, action, payload) {
+      const response = await fetch(`${BACKEND_URL}/inspector/shifts/${encodeURIComponent(shiftId)}/${action}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          token,
+          ...payload
+        })
+      });
+
+      return response.json();
+    }
+
+    async function confirmShift(shiftId) {
+      const ok = confirm('Подтвердить смену без изменений?');
+
+      if (!ok) {
+        return;
+      }
+
+      const result = await sendShiftAction(shiftId, 'confirm', {});
+
+      if (!result.success) {
+        alert(result.message || 'Не удалось подтвердить смену.');
+        return;
+      }
+
+      alert(result.message);
+      loadShifts();
+    }
+
+    async function rejectShift(shiftId) {
+      const comment = prompt('Укажите причину отклонения смены:');
+
+      if (comment === null) {
+        return;
+      }
+
+      if (!comment.trim()) {
+        alert('Причина отклонения обязательна.');
+        return;
+      }
+
+      const result = await sendShiftAction(shiftId, 'reject', {
+        comment: comment.trim()
+      });
+
+      if (!result.success) {
+        alert(result.message || 'Не удалось отклонить смену.');
+        return;
+      }
+
+      alert(result.message);
+      loadShifts();
+    }
+
+    async function correctShift(shiftId, hasStopTime) {
+      const timeLabel = hasStopTime ? 'окончания' : 'начала';
+      const time = prompt(`Укажите фактическое время ${timeLabel} смены в формате HH:MM`);
+
+      if (time === null) {
+        return;
+      }
+
+      if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(time.trim())) {
+        alert('Введите время в формате HH:MM, например 18:30.');
+        return;
+      }
+
+      const comment = prompt('Укажите причину корректировки:');
+
+      if (comment === null) {
+        return;
+      }
+
+      if (!comment.trim()) {
+        alert('Причина корректировки обязательна.');
+        return;
+      }
+
+      const result = await sendShiftAction(shiftId, 'correct', {
+        time: time.trim(),
+        comment: comment.trim()
+      });
+
+      if (!result.success) {
+        alert(result.message || 'Не удалось скорректировать смену.');
+        return;
+      }
+
+      alert(result.message);
+      loadShifts();
+    }
+
+    function actionButtons(shift) {
+      const buttons = [];
+      const hasStopTime = Boolean(shift.stop_time);
+
+      if (shift.can_confirm) {
+        buttons.push(`<button type="button" data-action="confirm" data-shift-id="${escapeHtml(shift._id)}">Подтвердить</button>`);
+      }
+
+      if (shift.can_correct) {
+        buttons.push(`<button class="secondary" type="button" data-action="correct" data-has-stop="${hasStopTime ? '1' : '0'}" data-shift-id="${escapeHtml(shift._id)}">Скорректировать</button>`);
+      }
+
+      if (shift.can_reject) {
+        buttons.push(`<button class="danger" type="button" data-action="reject" data-shift-id="${escapeHtml(shift._id)}">Отклонить</button>`);
+      }
+
+      if (!buttons.length) {
+        return '';
+      }
+
+      return `<div class="card-actions">${buttons.join('')}</div>`;
+    }
+
     function renderShifts(shifts) {
       const openItems = shifts.filter(item => item.status === 'open');
       const closeItems = shifts.filter(item => item.status === 'close');
@@ -422,6 +557,8 @@
             ${photoBlock('Фото открытия', shift.start_image_url)}
             ${photoBlock('Фото закрытия', shift.stop_image_url)}
           </div>
+
+          ${actionButtons(shift)}
         `;
 
         shiftList.appendChild(card);
@@ -463,6 +600,29 @@
     }
 
     refreshButton.addEventListener('click', loadShifts);
+
+    shiftList.addEventListener('click', event => {
+      const button = event.target.closest('button[data-action]');
+
+      if (!button) {
+        return;
+      }
+
+      const shiftId = button.dataset.shiftId;
+      const action = button.dataset.action;
+
+      if (action === 'confirm') {
+        confirmShift(shiftId);
+      }
+
+      if (action === 'reject') {
+        rejectShift(shiftId);
+      }
+
+      if (action === 'correct') {
+        correctShift(shiftId, button.dataset.hasStop === '1');
+      }
+    });
 
     logoutButton.addEventListener('click', () => {
       localStorage.removeItem('inspector_token');
