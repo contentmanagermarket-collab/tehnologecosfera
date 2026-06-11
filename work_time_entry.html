@@ -269,6 +269,66 @@
       }
     }
 
+    function compressImage(file) {
+      const maxSize = 1400;
+      const quality = 0.78;
+
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+
+        reader.onerror = () => {
+          reject(new Error('Не удалось прочитать фото.'));
+        };
+
+        reader.onload = event => {
+          const image = new Image();
+
+          image.onerror = () => {
+            reject(new Error('Не удалось подготовить фото.'));
+          };
+
+          image.onload = () => {
+            let width = image.width;
+            let height = image.height;
+
+            if (width > height && width > maxSize) {
+              height = Math.round((height * maxSize) / width);
+              width = maxSize;
+            } else if (height > maxSize) {
+              width = Math.round((width * maxSize) / height);
+              height = maxSize;
+            }
+
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+
+            const context = canvas.getContext('2d');
+            context.drawImage(image, 0, 0, width, height);
+
+            canvas.toBlob(blob => {
+              if (!blob) {
+                reject(new Error('Не удалось сжать фото.'));
+                return;
+              }
+
+              const compressedFile = new File(
+                [blob],
+                'shift_photo.jpg',
+                { type: 'image/jpeg' }
+              );
+
+              resolve(compressedFile);
+            }, 'image/jpeg', quality);
+          };
+
+          image.src = event.target.result;
+        };
+
+        reader.readAsDataURL(file);
+      });
+    }
+
     document.getElementById('shiftForm').addEventListener('submit', async event => {
       event.preventDefault();
 
@@ -295,17 +355,21 @@
       setLoading(true);
 
       try {
+        stage = 'подготовка фото';
+
+        const uploadFile = await compressImage(file);
+
         stage = 'загрузка фото';
 
-        const fileExt = file.name.split('.').pop().toLowerCase();
         const randomId = crypto.randomUUID();
-        const filePath = `shift_photos/${randomId}.${fileExt}`;
+        const filePath = `shift_photos/${randomId}.jpg`;
 
         const { error } = await supabaseClient
           .storage
           .from('work_photos')
-          .upload(filePath, file, {
+          .upload(filePath, uploadFile, {
             cacheControl: '3600',
+            contentType: 'image/jpeg',
             upsert: true
           });
 
