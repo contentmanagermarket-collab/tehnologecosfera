@@ -242,12 +242,40 @@
       reader.readAsDataURL(file);
     });
 
+    function setLoading(isLoading) {
+      actionButtons[0].disabled = isLoading;
+      actionButtons[1].disabled = isLoading;
+
+      if (isLoading) {
+        actionButtons[0].textContent = 'Загрузка...';
+        actionButtons[1].textContent = 'Загрузка...';
+      } else {
+        actionButtons[0].textContent = 'Открыть смену';
+        actionButtons[1].textContent = 'Закрыть смену';
+      }
+    }
+
+    async function readJsonResponse(response) {
+      const text = await response.text();
+
+      if (!text) {
+        throw new Error(`Сервер вернул пустой ответ. HTTP ${response.status}`);
+      }
+
+      try {
+        return JSON.parse(text);
+      } catch (error) {
+        throw new Error(`Сервер вернул не JSON. HTTP ${response.status}. Ответ: ${text.slice(0, 160)}`);
+      }
+    }
+
     document.getElementById('shiftForm').addEventListener('submit', async event => {
       event.preventDefault();
 
       const employee = document.getElementById('employee').value.trim();
       const comment = document.getElementById('comment').value.trim();
       const file = photoInput.files[0];
+      let stage = 'проверка формы';
 
       if (!employee) {
         alert('Введите ФИО сотрудника. Формат: Иванов Иван Петрович');
@@ -264,17 +292,16 @@
         return;
       }
 
-      actionButtons.forEach(button => {
-        button.disabled = true;
-        button.textContent = 'Загрузка...';
-      });
+      setLoading(true);
 
       try {
+        stage = 'загрузка фото';
+
         const fileExt = file.name.split('.').pop().toLowerCase();
         const randomId = crypto.randomUUID();
         const filePath = `shift_photos/${randomId}.${fileExt}`;
 
-        const { data, error } = await supabaseClient
+        const { error } = await supabaseClient
           .storage
           .from('work_photos')
           .upload(filePath, file, {
@@ -283,7 +310,7 @@
           });
 
         if (error) {
-          throw error;
+          throw new Error(`Supabase: ${error.message}`);
         }
 
         const { data: publicUrlData } = supabaseClient
@@ -293,8 +320,12 @@
 
         const photoUrl = publicUrlData.publicUrl;
 
+        stage = 'отправка на сервер';
+
         const response = await fetch(BACKEND_URL, {
           method: 'POST',
+          mode: 'cors',
+          cache: 'no-store',
           headers: {
             'Content-Type': 'application/json'
           },
@@ -307,7 +338,14 @@
           })
         });
 
-        const result = await response.json();
+        stage = 'чтение ответа сервера';
+
+        const result = await readJsonResponse(response);
+
+        if (!response.ok) {
+          alert(result.message || `Ошибка сервера. HTTP ${response.status}`);
+          return;
+        }
 
         if (!result.success) {
           alert(result.message);
@@ -329,13 +367,9 @@
 
       } catch (error) {
         console.error(error);
-        alert('Ошибка: ' + error.message);
+        alert(`Ошибка на этапе "${stage}": ${error.message}`);
       } finally {
-        actionButtons[0].disabled = false;
-        actionButtons[0].textContent = 'Открыть смену';
-
-        actionButtons[1].disabled = false;
-        actionButtons[1].textContent = 'Закрыть смену';
+        setLoading(false);
       }
     });
   </script>
