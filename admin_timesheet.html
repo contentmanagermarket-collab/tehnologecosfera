@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Табель человеко-часов</title>
+
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Arial, sans-serif;
+      background: #f4f6f2;
+      color: #20242a;
+      padding: 24px;
+    }
+
+    .shell {
+      width: 100%;
+      max-width: 1180px;
+      margin: 0 auto;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      margin-bottom: 22px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      min-width: 0;
+    }
+
+    .logo {
+      width: 170px;
+      max-width: 42vw;
+      height: auto;
+      flex: 0 0 auto;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 28px;
+      line-height: 1.15;
+      color: #20242a;
+    }
+
+    .meta {
+      margin-top: 6px;
+      font-size: 15px;
+      color: #5f6670;
+    }
+
+    .actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    button,
+    .button-link {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      padding: 12px 18px;
+      border: none;
+      border-radius: 16px;
+      background: #96c22c;
+      color: #ffffff;
+      font-size: 15px;
+      font-weight: 700;
+      text-decoration: none;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    button.secondary,
+    .button-link.secondary {
+      background: #6a6a6a;
+    }
+
+    button:disabled {
+      opacity: 0.65;
+      cursor: default;
+    }
+
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+
+    .summary-card {
+      min-height: 104px;
+      background: #ffffff;
+      border-radius: 22px;
+      padding: 22px;
+      box-shadow: 0 14px 32px rgba(32, 36, 42, 0.06);
+    }
+
+    .summary-value {
+      font-size: 30px;
+      line-height: 1;
+      font-weight: 800;
+      color: #20242a;
+    }
+
+    .summary-label {
+      margin-top: 8px;
+      font-size: 15px;
+      color: #5f6670;
+    }
+
+    .filters {
+      display: grid;
+      grid-template-columns: minmax(160px, 220px) minmax(220px, 1fr) auto;
+      gap: 12px;
+      align-items: end;
+      margin-bottom: 18px;
+      padding: 18px;
+      border-radius: 22px;
+      background: #ffffff;
+      box-shadow: 0 14px 32px rgba(32, 36, 42, 0.05);
+    }
+
+    label {
+      display: block;
+      margin-bottom: 7px;
+      font-size: 13px;
+      font-weight: 700;
+      color: #5f6670;
+    }
+
+    input,
+    select {
+      width: 100%;
+      min-height: 48px;
+      border: 1px solid #dfe5d8;
+      border-radius: 14px;
+      padding: 12px 14px;
+      background: #ffffff;
+      color: #20242a;
+      font-size: 16px;
+      font-family: Arial, sans-serif;
+      outline: none;
+    }
+
+    input:focus,
+    select:focus {
+      border-color: #96c22c;
+      box-shadow: 0 0 0 4px rgba(150, 194, 44, 0.16);
+    }
+
+    .table-card {
+      overflow: hidden;
+      border-radius: 22px;
+      background: #ffffff;
+      box-shadow: 0 14px 32px rgba(32, 36, 42, 0.06);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+    }
+
+    th,
+    td {
+      padding: 18px 20px;
+      border-bottom: 1px solid #edf1e9;
+      text-align: left;
+      vertical-align: middle;
+      font-size: 16px;
+    }
+
+    th {
+      background: #f8faf5;
+      color: #5f6670;
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0;
+    }
+
+    td:first-child {
+      font-weight: 700;
+      color: #20242a;
+    }
+
+    th:nth-child(2),
+    th:nth-child(3),
+    td:nth-child(2),
+    td:nth-child(3) {
+      width: 190px;
+      text-align: right;
+    }
+
+    tbody tr:last-child td {
+      border-bottom: none;
+    }
+
+    .message {
+      display: none;
+      margin-bottom: 18px;
+      padding: 14px 16px;
+      border-radius: 16px;
+      background: #fff8e6;
+      border: 1px solid #efdca9;
+      color: #7a5b10;
+      font-size: 15px;
+    }
+
+    .empty {
+      display: none;
+      padding: 34px 20px;
+      text-align: center;
+      color: #5f6670;
+      font-size: 16px;
+    }
+
+    @media (max-width: 820px) {
+      body { padding: 16px; }
+
+      .topbar {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .brand {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .actions {
+        width: 100%;
+        justify-content: stretch;
+      }
+
+      .actions button,
+      .actions .button-link {
+        flex: 1 1 auto;
+      }
+
+      .summary {
+        grid-template-columns: 1fr;
+      }
+
+      .filters {
+        grid-template-columns: 1fr;
+      }
+
+      h1 {
+        font-size: 25px;
+      }
+
+      .table-card {
+        overflow-x: auto;
+      }
+
+      table {
+        min-width: 620px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header class="topbar">
+      <div class="brand">
+        <img class="logo" src="logo.png" alt="Экосфера" />
+        <div>
+          <h1>Табель человеко-часов</h1>
+          <div class="meta" id="adminMeta">Загрузка...</div>
+        </div>
+      </div>
+
+      <div class="actions">
+        <a class="button-link secondary" id="reviewLink" href="inspector_panel.html">Непроверенные смены</a>
+        <button id="refreshButton" type="button">Обновить</button>
+        <button class="secondary" id="logoutButton" type="button">Выйти</button>
+      </div>
+    </header>
+
+    <section class="summary">
+      <div class="summary-card">
+        <div class="summary-value" id="employeesCount">0</div>
+        <div class="summary-label">Сотрудников</div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-value" id="hoursCount">0</div>
+        <div class="summary-label">Часов за месяц</div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-value" id="shiftsCount">0</div>
+        <div class="summary-label">Смен за месяц</div>
+      </div>
+    </section>
+
+    <section class="filters">
+      <div>
+        <label for="monthInput">Месяц</label>
+        <input id="monthInput" type="month" />
+      </div>
+      <div>
+        <label for="branchSelect">Филиал</label>
+        <select id="branchSelect">
+          <option value="">Все филиалы</option>
+        </select>
+      </div>
+      <button id="applyButton" type="button">Показать</button>
+    </section>
+
+    <div class="message" id="message"></div>
+
+    <section class="table-card">
+      <table>
+        <thead>
+          <tr>
+            <th>Сотрудник</th>
+            <th>Часы за месяц</th>
+            <th>Смен за месяц</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+      <div class="empty" id="empty">За выбранный период подтвержденных закрытых смен нет.</div>
+    </section>
+  </main>
+
+  <script>
+    const BACKEND_URL = 'https://ekosfera.midera.fun/web';
+
+    const params = new URLSearchParams(window.location.search);
+    const urlToken = params.get('token') || '';
+    const storedToken = localStorage.getItem('inspector_token') || '';
+    const token = urlToken || storedToken;
+
+    const adminMeta = document.getElementById('adminMeta');
+    const reviewLink = document.getElementById('reviewLink');
+    const refreshButton = document.getElementById('refreshButton');
+    const logoutButton = document.getElementById('logoutButton');
+    const applyButton = document.getElementById('applyButton');
+    const monthInput = document.getElementById('monthInput');
+    const branchSelect = document.getElementById('branchSelect');
+    const message = document.getElementById('message');
+    const tableBody = document.getElementById('tableBody');
+    const empty = document.getElementById('empty');
+    const employeesCount = document.getElementById('employeesCount');
+    const hoursCount = document.getElementById('hoursCount');
+    const shiftsCount = document.getElementById('shiftsCount');
+
+    function currentMonth() {
+      const now = new Date();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      return `${now.getFullYear()}-${month}`;
+    }
+
+    function showMessage(text) {
+      message.textContent = text;
+      message.style.display = text ? 'block' : 'none';
+    }
+
+    function escapeHtml(value) {
+      return String(value || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function formatNumber(value) {
+      const number = Number(value || 0);
+      return number.toLocaleString('ru-RU', {
+        minimumFractionDigits: Number.isInteger(number) ? 0 : 2,
+        maximumFractionDigits: 2
+      });
+    }
+
+    function fillBranches(branches) {
+      const selectedValue = branchSelect.value;
+
+      branchSelect.innerHTML = '<option value="">Все филиалы</option>';
+
+      branches.forEach(branch => {
+        const option = document.createElement('option');
+        option.value = branch.code;
+        option.textContent = branch.name || branch.code;
+        branchSelect.appendChild(option);
+      });
+
+      if (selectedValue) {
+        branchSelect.value = selectedValue;
+      }
+    }
+
+    function renderRows(rows) {
+      tableBody.innerHTML = '';
+      empty.style.display = rows.length ? 'none' : 'block';
+
+      rows.forEach(row => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${escapeHtml(row.employee)}</td>
+          <td>${formatNumber(row.hours)}</td>
+          <td>${formatNumber(row.shifts)}</td>
+        `;
+        tableBody.appendChild(tr);
+      });
+    }
+
+    async function loadTimesheet() {
+      if (!token) {
+        window.location.href = 'inspector_login.html';
+        return;
+      }
+
+      localStorage.setItem('inspector_token', token);
+      reviewLink.href = `inspector_panel.html?token=${encodeURIComponent(token)}`;
+
+      refreshButton.disabled = true;
+      applyButton.disabled = true;
+      refreshButton.textContent = 'Загрузка...';
+      showMessage('');
+
+      const selectedMonth = monthInput.value || currentMonth();
+      const selectedBranch = branchSelect.value || '';
+
+      try {
+        const url = new URL(`${BACKEND_URL}/admin/timesheet`);
+        url.searchParams.set('token', token);
+        url.searchParams.set('month', selectedMonth);
+
+        if (selectedBranch) {
+          url.searchParams.set('branch_id', selectedBranch);
+        }
+
+        const response = await fetch(url.toString());
+        const result = await response.json();
+
+        if (!result.success) {
+          showMessage(result.message || 'Не удалось загрузить табель.');
+          renderRows([]);
+          return;
+        }
+
+        adminMeta.textContent = `${result.inspector.name || 'Администратор'} · ${result.period.from} - ${result.period.to}`;
+        employeesCount.textContent = formatNumber(result.totals.employees);
+        hoursCount.textContent = formatNumber(result.totals.hours);
+        shiftsCount.textContent = formatNumber(result.totals.shifts);
+        fillBranches(result.branches || []);
+        renderRows(result.rows || []);
+      } catch (error) {
+        console.error(error);
+        showMessage('Ошибка загрузки табеля. Попробуйте обновить страницу.');
+        renderRows([]);
+      } finally {
+        refreshButton.disabled = false;
+        applyButton.disabled = false;
+        refreshButton.textContent = 'Обновить';
+      }
+    }
+
+    monthInput.value = params.get('month') || currentMonth();
+
+    refreshButton.addEventListener('click', loadTimesheet);
+    applyButton.addEventListener('click', loadTimesheet);
+
+    logoutButton.addEventListener('click', () => {
+      localStorage.removeItem('inspector_token');
+      window.location.href = 'inspector_login.html';
+    });
+
+    loadTimesheet();
+  </script>
+</body>
+</html>
