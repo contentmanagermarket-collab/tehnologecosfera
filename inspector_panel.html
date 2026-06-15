@@ -342,6 +342,7 @@
       </div>
 
       <div class="actions">
+        <button class="secondary" id="timesheetButton" type="button" style="display: none;">Табель</button>
         <button id="refreshButton" type="button">Обновить</button>
         <button class="secondary" id="logoutButton" type="button">Выйти</button>
       </div>
@@ -394,6 +395,7 @@
     const shiftList = document.getElementById('shiftList');
     const message = document.getElementById('message');
     const empty = document.getElementById('empty');
+    const timesheetButton = document.getElementById('timesheetButton');
     const refreshButton = document.getElementById('refreshButton');
     const logoutButton = document.getElementById('logoutButton');
     const filterButtons = document.querySelectorAll('.filter-button');
@@ -676,6 +678,7 @@
 
         localStorage.setItem('inspector_token', token);
         inspectorMeta.textContent = `${result.inspector.name || 'Проверяющий'} · филиалов: ${result.branches.length}`;
+        timesheetButton.style.display = result.inspector.is_admin ? 'inline-flex' : 'none';
         allShifts = result.shifts || [];
         renderShifts();
       } catch (error) {
@@ -732,6 +735,10 @@
     logoutButton.addEventListener('click', () => {
       localStorage.removeItem('inspector_token');
       window.location.href = 'inspector_login.html';
+    });
+
+    timesheetButton.addEventListener('click', () => {
+      window.location.href = `admin_timesheet.html?token=${encodeURIComponent(token)}`;
     });
 
     loadShifts();
