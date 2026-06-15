@@ -133,6 +133,26 @@
       box-shadow: 0 14px 32px rgba(32, 36, 42, 0.05);
     }
 
+    .tabs {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 18px;
+    }
+
+    .tab-button {
+      background: #ffffff;
+      color: #20242a;
+      border: 1px solid #dfe5d8;
+      box-shadow: none;
+    }
+
+    .tab-button.active {
+      background: #96c22c;
+      color: #ffffff;
+      border-color: #96c22c;
+    }
+
     label {
       display: block;
       margin-bottom: 7px;
@@ -227,6 +247,82 @@
       font-size: 16px;
     }
 
+    .corrections-list {
+      display: none;
+      grid-template-columns: 1fr;
+      gap: 14px;
+    }
+
+    .correction-card {
+      background: #ffffff;
+      border-radius: 22px;
+      padding: 20px;
+      box-shadow: 0 14px 32px rgba(32, 36, 42, 0.06);
+    }
+
+    .correction-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
+      align-items: flex-start;
+      margin-bottom: 14px;
+    }
+
+    .correction-employee {
+      font-size: 20px;
+      font-weight: 800;
+      color: #20242a;
+    }
+
+    .correction-branch {
+      margin-top: 5px;
+      color: #5f6670;
+      font-size: 15px;
+    }
+
+    .correction-hours {
+      flex: 0 0 auto;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: #607d8b;
+      color: #ffffff;
+      font-weight: 800;
+    }
+
+    .correction-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .correction-detail,
+    .correction-comment {
+      border-radius: 16px;
+      background: #f8faf5;
+      padding: 14px;
+    }
+
+    .correction-label {
+      margin-bottom: 6px;
+      color: #5f6670;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .correction-value {
+      color: #20242a;
+      font-size: 16px;
+      line-height: 1.35;
+      white-space: pre-wrap;
+    }
+
+    .correction-comments {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
     @media (max-width: 820px) {
       body { padding: 16px; }
 
@@ -269,6 +365,20 @@
 
       table {
         min-width: 620px;
+      }
+
+      .correction-head {
+        display: block;
+      }
+
+      .correction-hours {
+        display: inline-flex;
+        margin-top: 10px;
+      }
+
+      .correction-grid,
+      .correction-comments {
+        grid-template-columns: 1fr;
       }
     }
   </style>
@@ -320,9 +430,14 @@
       <button id="applyButton" type="button">Показать</button>
     </section>
 
+    <section class="tabs" aria-label="Разделы админ-панели">
+      <button class="tab-button active" type="button" data-tab="timesheet">Табель</button>
+      <button class="tab-button" type="button" data-tab="corrections">История корректировок</button>
+    </section>
+
     <div class="message" id="message"></div>
 
-    <section class="table-card">
+    <section class="table-card" id="timesheetSection">
       <table>
         <thead>
           <tr>
@@ -335,6 +450,9 @@
       </table>
       <div class="empty" id="empty">За выбранный период подтвержденных закрытых смен нет.</div>
     </section>
+
+    <section class="corrections-list" id="correctionsList"></section>
+    <div class="empty" id="correctionsEmpty">За выбранный период закрытых смен с корректировкой нет.</div>
   </main>
 
   <script>
@@ -353,11 +471,16 @@
     const monthInput = document.getElementById('monthInput');
     const branchSelect = document.getElementById('branchSelect');
     const message = document.getElementById('message');
+    const tabButtons = document.querySelectorAll('.tab-button');
+    const timesheetSection = document.getElementById('timesheetSection');
     const tableBody = document.getElementById('tableBody');
     const empty = document.getElementById('empty');
+    const correctionsList = document.getElementById('correctionsList');
+    const correctionsEmpty = document.getElementById('correctionsEmpty');
     const employeesCount = document.getElementById('employeesCount');
     const hoursCount = document.getElementById('hoursCount');
     const shiftsCount = document.getElementById('shiftsCount');
+    let activeTab = 'timesheet';
 
     function currentMonth() {
       const now = new Date();
@@ -419,7 +542,62 @@
       });
     }
 
-    async function loadTimesheet() {
+    function renderCorrections(rows) {
+      correctionsList.innerHTML = '';
+      correctionsEmpty.style.display = rows.length ? 'none' : 'block';
+
+      rows.forEach(row => {
+        const card = document.createElement('article');
+        card.className = 'correction-card';
+        card.innerHTML = `
+          <div class="correction-head">
+            <div>
+              <div class="correction-employee">${escapeHtml(row.employee)}</div>
+              <div class="correction-branch">${escapeHtml(row.branch_name)}</div>
+            </div>
+            <div class="correction-hours">${formatNumber(row.hours)} ч</div>
+          </div>
+
+          <div class="correction-grid">
+            <div class="correction-detail">
+              <div class="correction-label">Открытие</div>
+              <div class="correction-value">${escapeHtml(row.start_time || '-')}</div>
+            </div>
+            <div class="correction-detail">
+              <div class="correction-label">Закрытие</div>
+              <div class="correction-value">${escapeHtml(row.stop_time || '-')}</div>
+            </div>
+          </div>
+
+          <div class="correction-comments">
+            <div class="correction-comment">
+              <div class="correction-label">Комментарий сотрудника</div>
+              <div class="correction-value">${escapeHtml(row.user_comments || 'Комментарий не указан')}</div>
+            </div>
+            <div class="correction-comment">
+              <div class="correction-label">Комментарий проверяющего</div>
+              <div class="correction-value">${escapeHtml(row.inspectors_comments || 'Комментарий не указан')}</div>
+            </div>
+          </div>
+        `;
+        correctionsList.appendChild(card);
+      });
+    }
+
+    function setActiveTab(tab) {
+      activeTab = tab;
+
+      tabButtons.forEach(button => {
+        button.classList.toggle('active', button.dataset.tab === activeTab);
+      });
+
+      timesheetSection.style.display = activeTab === 'timesheet' ? 'block' : 'none';
+      empty.style.display = activeTab === 'timesheet' && tableBody.children.length === 0 ? 'block' : 'none';
+      correctionsList.style.display = activeTab === 'corrections' ? 'grid' : 'none';
+      correctionsEmpty.style.display = 'none';
+    }
+
+    async function loadAdminData() {
       if (!token) {
         window.location.href = 'inspector_login.html';
         return;
@@ -432,12 +610,15 @@
       applyButton.disabled = true;
       refreshButton.textContent = 'Загрузка...';
       showMessage('');
+      empty.style.display = 'none';
+      correctionsEmpty.style.display = 'none';
 
       const selectedMonth = monthInput.value || currentMonth();
       const selectedBranch = branchSelect.value || '';
 
       try {
-        const url = new URL(`${BACKEND_URL}/admin/timesheet`);
+        const endpoint = activeTab === 'timesheet' ? 'timesheet' : 'corrections';
+        const url = new URL(`${BACKEND_URL}/admin/${endpoint}`);
         url.searchParams.set('token', token);
         url.searchParams.set('month', selectedMonth);
 
@@ -449,21 +630,29 @@
         const result = await response.json();
 
         if (!result.success) {
-          showMessage(result.message || 'Не удалось загрузить табель.');
+          showMessage(result.message || 'Не удалось загрузить данные.');
           renderRows([]);
+          renderCorrections([]);
           return;
         }
 
         adminMeta.textContent = `${result.inspector.name || 'Администратор'} · ${result.period.from} - ${result.period.to}`;
-        employeesCount.textContent = formatNumber(result.totals.employees);
+        employeesCount.textContent = formatNumber(activeTab === 'timesheet' ? result.totals.employees : result.totals.corrections);
         hoursCount.textContent = formatNumber(result.totals.hours);
-        shiftsCount.textContent = formatNumber(result.totals.shifts);
+        shiftsCount.textContent = formatNumber(activeTab === 'timesheet' ? result.totals.shifts : result.totals.corrections);
         fillBranches(result.branches || []);
-        renderRows(result.rows || []);
+        if (activeTab === 'timesheet') {
+          renderRows(result.rows || []);
+          renderCorrections([]);
+        } else {
+          renderRows([]);
+          renderCorrections(result.rows || []);
+        }
       } catch (error) {
         console.error(error);
-        showMessage('Ошибка загрузки табеля. Попробуйте обновить страницу.');
+        showMessage('Ошибка загрузки данных. Попробуйте обновить страницу.');
         renderRows([]);
+        renderCorrections([]);
       } finally {
         refreshButton.disabled = false;
         applyButton.disabled = false;
@@ -473,15 +662,23 @@
 
     monthInput.value = params.get('month') || currentMonth();
 
-    refreshButton.addEventListener('click', loadTimesheet);
-    applyButton.addEventListener('click', loadTimesheet);
+    refreshButton.addEventListener('click', loadAdminData);
+    applyButton.addEventListener('click', loadAdminData);
+
+    tabButtons.forEach(button => {
+      button.addEventListener('click', () => {
+        setActiveTab(button.dataset.tab);
+        loadAdminData();
+      });
+    });
 
     logoutButton.addEventListener('click', () => {
       localStorage.removeItem('inspector_token');
       window.location.href = 'inspector_login.html';
     });
 
-    loadTimesheet();
+    setActiveTab('timesheet');
+    loadAdminData();
   </script>
 </body>
 </html>
