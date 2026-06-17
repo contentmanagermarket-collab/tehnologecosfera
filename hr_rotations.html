@@ -196,13 +196,13 @@
     }
 
     .gantt {
-      min-width: 1180px;
+      min-width: 1540px;
     }
 
     .gantt-header,
     .gantt-row {
       display: grid;
-      grid-template-columns: 230px 190px minmax(250px, 0.52fr) 140px 210px 150px;
+      grid-template-columns: 250px 210px minmax(540px, 1fr) 150px 230px 170px;
       border-bottom: 1px solid #edf0e8;
     }
 
@@ -216,13 +216,14 @@
 
     .gantt-cell {
       padding: 14px;
-      min-height: 58px;
+      min-height: 68px;
       display: flex;
       align-items: center;
     }
 
     .gantt-cell.action-cell {
-      justify-content: flex-start;
+      justify-content: flex-end;
+      padding-right: 26px;
     }
 
     .employee {
@@ -244,16 +245,17 @@
 
     .timeline {
       position: relative;
-      min-height: 58px;
-      padding: 18px 14px;
+      min-height: 68px;
+      padding: 18px 20px;
       background: #f2f5ec;
     }
 
     .bar {
       position: absolute;
-      top: 18px;
-      left: 14px;
-      height: 22px;
+      top: 50%;
+      left: 20px;
+      transform: translateY(-50%);
+      height: 24px;
       min-width: 8px;
       border-radius: 999px;
       background: #96c22c;
@@ -262,10 +264,10 @@
 
     .bar-label {
       position: absolute;
-      top: 18px;
+      top: 50%;
       left: 50%;
-      transform: translateX(-50%);
-      height: 22px;
+      transform: translate(-50%, -50%);
+      height: 24px;
       display: flex;
       align-items: center;
       color: #344054;
@@ -587,12 +589,12 @@
 
         const duration = Number(item.planned_duration_days || 0);
         const daysLeft = item.raw_status === 'closed' ? 0 : Number(item.days_left || 0);
-        const remainingPercent = duration ? clamp((daysLeft / duration) * 100, 0, 100) : 0;
-        const width = item.raw_status === 'closed' ? 100 : remainingPercent;
+      const remainingPercent = duration ? clamp((daysLeft / duration) * 100, 0, 100) : 0;
+      const width = item.raw_status === 'closed' ? 100 : remainingPercent;
         const daysText = item.raw_status === 'closed'
           ? 'закрыта'
           : `${Math.max(daysLeft, 0)} дн. осталось`;
-        const barWidth = width <= 3 ? '8px' : `calc(${width}% - 28px)`;
+        const barWidth = width <= 3 ? '8px' : `calc(${width}% - 40px)`;
 
         row.innerHTML = `
           <div class="gantt-cell employee">
