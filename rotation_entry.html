@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Открытие вахты</title>
+
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Arial, sans-serif;
+      background: #f4f6f2;
+      color: #20242a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .card {
+      width: 100%;
+      max-width: 560px;
+      background: #ffffff;
+      border-radius: 24px;
+      padding: 30px;
+      box-shadow: 0 18px 45px rgba(32, 36, 42, 0.08);
+    }
+
+    .logo {
+      display: block;
+      width: 240px;
+      max-width: 80%;
+      margin: 0 auto 22px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 28px;
+      line-height: 1.15;
+      text-align: center;
+      color: #20242a;
+    }
+
+    .subtitle {
+      margin: 10px 0 24px;
+      text-align: center;
+      color: #5f6670;
+      font-size: 16px;
+    }
+
+    label {
+      display: block;
+      margin: 16px 0 8px;
+      font-size: 14px;
+      font-weight: 700;
+      color: #3d4652;
+    }
+
+    input,
+    select,
+    textarea {
+      width: 100%;
+      min-height: 52px;
+      border: 1px solid #dfe5d8;
+      border-radius: 14px;
+      padding: 13px 14px;
+      font-size: 16px;
+      font-family: Arial, sans-serif;
+      background: #ffffff;
+      color: #20242a;
+      outline: none;
+    }
+
+    textarea {
+      min-height: 104px;
+      resize: vertical;
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+      border-color: #96c22c;
+      box-shadow: 0 0 0 4px rgba(150, 194, 44, 0.18);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    button {
+      width: 100%;
+      min-height: 56px;
+      margin-top: 22px;
+      border: none;
+      border-radius: 16px;
+      background: #96c22c;
+      color: #ffffff;
+      font-size: 17px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      opacity: 0.65;
+      cursor: default;
+    }
+
+    .message {
+      display: none;
+      margin-top: 18px;
+      padding: 14px 16px;
+      border-radius: 14px;
+      font-size: 15px;
+      line-height: 1.35;
+    }
+
+    .message.success {
+      display: block;
+      background: #eef8dc;
+      border: 1px solid #cfe8a2;
+      color: #3f6410;
+    }
+
+    .message.error {
+      display: block;
+      background: #fff0ee;
+      border: 1px solid #f0c5bd;
+      color: #b33424;
+    }
+
+    @media (max-width: 560px) {
+      body { padding: 14px; }
+      .card { padding: 22px; border-radius: 20px; }
+      .grid { grid-template-columns: 1fr; gap: 0; }
+      h1 { font-size: 24px; }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="card">
+    <img class="logo" src="logo.png" alt="Экосфера" />
+    <h1>ОТКРЫТИЕ ВАХТЫ</h1>
+    <div class="subtitle" id="branchHint">Объект определяется по QR-коду</div>
+
+    <form id="rotationForm">
+      <label for="employee">ФИО сотрудника</label>
+      <input id="employee" type="text" autocomplete="name" required placeholder="Введите ФИО полностью" />
+
+      <div class="grid">
+        <div>
+          <label for="startDate">Дата начала вахты</label>
+          <input id="startDate" type="date" required />
+        </div>
+
+        <div>
+          <label for="durationDays">Длительность</label>
+          <select id="durationDays" required>
+            <option value="45">45 дней</option>
+            <option value="60">60 дней</option>
+          </select>
+        </div>
+      </div>
+
+      <label for="openedByRole">Кто открывает</label>
+      <select id="openedByRole">
+        <option value="employee">Сотрудник</option>
+        <option value="manager">Управляющий объекта</option>
+        <option value="hr">HR</option>
+      </select>
+
+      <label for="openedByName">ФИО открывающего</label>
+      <input id="openedByName" type="text" placeholder="Можно оставить пустым" />
+
+      <label for="comment">Комментарий</label>
+      <textarea id="comment" placeholder="Если нужно, добавьте комментарий"></textarea>
+
+      <button id="submitButton" type="submit">Открыть вахту</button>
+      <div id="message" class="message"></div>
+    </form>
+  </main>
+
+  <script>
+    const BACKEND_URL = 'https://ekosfera.midera.fun/web/rotation/open';
+    const params = new URLSearchParams(window.location.search);
+    const branchId = params.get('branch_id') || '';
+
+    const form = document.getElementById('rotationForm');
+    const message = document.getElementById('message');
+    const button = document.getElementById('submitButton');
+    const branchHint = document.getElementById('branchHint');
+    const startDate = document.getElementById('startDate');
+
+    startDate.value = new Date().toISOString().slice(0, 10);
+
+    if (!branchId) {
+      branchHint.textContent = 'Страница открыта без QR-кода объекта';
+      branchHint.style.color = '#b33424';
+    }
+
+    function showMessage(type, text) {
+      message.className = `message ${type}`;
+      message.textContent = text;
+    }
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+
+      if (!branchId) {
+        showMessage('error', 'Страница открыта без QR-кода объекта. Отсканируйте QR-код на объекте.');
+        return;
+      }
+
+      const payload = {
+        employee: document.getElementById('employee').value.trim(),
+        branch_id: branchId,
+        start_date: startDate.value,
+        duration_days: Number(document.getElementById('durationDays').value),
+        opened_by_role: document.getElementById('openedByRole').value,
+        opened_by_name: document.getElementById('openedByName').value.trim(),
+        comment: document.getElementById('comment').value.trim(),
+        photoUrl: ''
+      };
+
+      button.disabled = true;
+      button.textContent = 'Отправка...';
+      message.className = 'message';
+      message.textContent = '';
+
+      try {
+        const response = await fetch(BACKEND_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        const result = await response.json();
+
+        if (!result.success) {
+          throw new Error(result.message || 'Не удалось открыть вахту.');
+        }
+
+        showMessage('success', result.message || 'Вахта открыта.');
+        form.reset();
+        startDate.value = new Date().toISOString().slice(0, 10);
+      } catch (error) {
+        showMessage('error', `Ошибка: ${error.message}`);
+      } finally {
+        button.disabled = false;
+        button.textContent = 'Открыть вахту';
+      }
+    });
+  </script>
+</body>
+</html>
