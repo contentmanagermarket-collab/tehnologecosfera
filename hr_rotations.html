@@ -196,13 +196,13 @@
     }
 
     .gantt {
-      min-width: 1080px;
+      min-width: 1180px;
     }
 
     .gantt-header,
     .gantt-row {
       display: grid;
-      grid-template-columns: 260px minmax(300px, 0.62fr) 150px 220px 130px;
+      grid-template-columns: 230px 190px minmax(250px, 0.52fr) 140px 210px 150px;
       border-bottom: 1px solid #edf0e8;
     }
 
@@ -221,6 +221,10 @@
       align-items: center;
     }
 
+    .gantt-cell.action-cell {
+      justify-content: flex-start;
+    }
+
     .employee {
       display: block;
       min-width: 0;
@@ -233,9 +237,9 @@
     }
 
     .employee-branch {
-      margin-top: 4px;
-      font-size: 13px;
-      color: #687281;
+      font-size: 15px;
+      font-weight: 800;
+      color: #4f5966;
     }
 
     .timeline {
@@ -433,6 +437,7 @@
           <div class="gantt">
             <div class="gantt-header">
               <div class="gantt-cell">Сотрудник</div>
+              <div class="gantt-cell">Объект</div>
               <div class="gantt-cell">Период</div>
               <div class="gantt-cell">Дата начала</div>
               <div class="gantt-cell">Плановое окончание</div>
@@ -593,8 +598,10 @@
           <div class="gantt-cell employee">
             <div>
               <div class="employee-name">${item.employee_name || '-'}</div>
-              <div class="employee-branch">${item.branch_name || '-'}</div>
             </div>
+          </div>
+          <div class="gantt-cell">
+            <div class="employee-branch">${item.branch_name || '-'}</div>
           </div>
           <div class="timeline">
             <div class="bar ${statusClass(item)}" style="width:${barWidth};"></div>
@@ -606,7 +613,7 @@
           <div class="gantt-cell">
             <span class="badge ${statusClass(item)}">${item.planned_end_date_display || '-'} · ${item.planned_duration_days} дней</span>
           </div>
-          <div class="gantt-cell">
+          <div class="gantt-cell action-cell">
             ${item.raw_status === 'open' ? `<button type="button" data-close="${item._id}">Закрыть</button>` : ''}
           </div>
         `;
