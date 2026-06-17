@@ -242,24 +242,30 @@
       position: relative;
       min-height: 58px;
       padding: 18px 14px;
-      background:
-        repeating-linear-gradient(
-          to right,
-          #ffffff 0,
-          #ffffff calc(100% / 31 - 1px),
-          #edf0e8 calc(100% / 31 - 1px),
-          #edf0e8 calc(100% / 31)
-        );
+      background: #f2f5ec;
     }
 
     .bar {
       position: absolute;
       top: 18px;
+      left: 14px;
       height: 22px;
       min-width: 8px;
       border-radius: 999px;
       background: #96c22c;
       box-shadow: 0 5px 12px rgba(32, 36, 42, 0.12);
+    }
+
+    .bar-label {
+      position: absolute;
+      top: 18px;
+      right: 14px;
+      height: 22px;
+      display: flex;
+      align-items: center;
+      color: #4f5966;
+      font-size: 13px;
+      font-weight: 800;
     }
 
     .bar.ending_soon { background: #d79722; }
@@ -420,7 +426,7 @@
             <div class="gantt-header">
               <div class="gantt-cell">Сотрудник</div>
               <div class="gantt-cell">Период</div>
-              <div class="gantt-cell">Окончание</div>
+              <div class="gantt-cell">Плановое окончание</div>
               <div class="gantt-cell">Действие</div>
             </div>
             <div id="ganttBody"></div>
@@ -538,27 +544,18 @@
         return;
       }
 
-      const bounds = monthBounds(monthInput.value);
-      const dayMs = 24 * 60 * 60 * 1000;
-
       items.forEach((item) => {
         const row = document.createElement('div');
         row.className = 'gantt-row';
 
-        const start = parseDate(item.start_date);
-        const end = parseDate(item.actual_end_date || item.planned_end_date);
-
-        let left = 0;
-        let width = 0;
-
-        if (start && end) {
-          const visibleStart = new Date(Math.max(start.getTime(), bounds.start.getTime()));
-          const visibleEnd = new Date(Math.min(end.getTime(), bounds.end.getTime()));
-          left = ((visibleStart - bounds.start) / dayMs) / bounds.days * 100;
-          width = ((visibleEnd - visibleStart) / dayMs + 1) / bounds.days * 100;
-          left = clamp(left, 0, 100);
-          width = clamp(width, 1, 100 - left);
-        }
+        const duration = Number(item.planned_duration_days || 0);
+        const daysLeft = item.raw_status === 'closed' ? 0 : Number(item.days_left || 0);
+        const remainingPercent = duration ? clamp((daysLeft / duration) * 100, 0, 100) : 0;
+        const width = item.raw_status === 'closed' ? 100 : remainingPercent;
+        const daysText = item.raw_status === 'closed'
+          ? 'закрыта'
+          : `${Math.max(daysLeft, 0)} дн. осталось`;
+        const barWidth = width <= 3 ? '8px' : `calc(${width}% - 28px)`;
 
         row.innerHTML = `
           <div class="gantt-cell employee">
@@ -568,10 +565,11 @@
             </div>
           </div>
           <div class="timeline">
-            <div class="bar ${statusClass(item)}" style="left:${left}%; width:${width}%;"></div>
+            <div class="bar ${statusClass(item)}" style="width:${barWidth};"></div>
+            <div class="bar-label">${daysText}</div>
           </div>
           <div class="gantt-cell">
-            <span class="badge ${statusClass(item)}">${item.planned_end_date_display || '-'} · ${statusText(item)}</span>
+            <span class="badge ${statusClass(item)}">${item.planned_end_date_display || '-'} · ${item.planned_duration_days} дней · ${statusText(item)}</span>
           </div>
           <div class="gantt-cell">
             ${item.raw_status === 'open' ? `<button type="button" data-close="${item._id}">Закрыть</button>` : ''}
