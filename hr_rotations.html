@@ -499,6 +499,7 @@
 
     let token = initialToken;
     let currentRotationId = '';
+    let currentRotationPlannedEndDate = '';
     let currentHrName = '';
 
     tokenInput.value = initialToken;
@@ -535,6 +536,17 @@
 
     function statusClass(item) {
       return item.status || 'open';
+    }
+
+    function dayWord(value) {
+      const number = Math.abs(Number(value || 0));
+      const lastTwo = number % 100;
+      const last = number % 10;
+
+      if (lastTwo >= 11 && lastTwo <= 14) return 'дней';
+      if (last === 1) return 'день';
+      if (last >= 2 && last <= 4) return 'дня';
+      return 'дней';
     }
 
     function renderBranches(branches) {
@@ -590,10 +602,11 @@
 
         const duration = Number(item.planned_duration_days || 0);
         const daysLeft = item.raw_status === 'closed' ? 0 : Number(item.days_left || 0);
-      const remainingPercent = duration ? clamp((daysLeft / duration) * 100, 0, 100) : 0;
-      const width = item.raw_status === 'closed' ? 100 : remainingPercent;
+        const remainingPercent = duration ? clamp((daysLeft / duration) * 100, 0, 100) : 0;
+        const width = item.raw_status === 'closed' ? 100 : remainingPercent;
+        const actualDays = Number(item.actual_duration_days || 0);
         const daysText = item.raw_status === 'closed'
-          ? 'закрыта'
+          ? `отработано: ${actualDays} ${dayWord(actualDays)}`
           : `${Math.max(daysLeft, 0)} дн. осталось`;
         const barWidth = width <= 3 ? '8px' : `calc(${width}% - 40px)`;
 
@@ -704,6 +717,7 @@
 
     function openCloseModal(item) {
       currentRotationId = item._id;
+      currentRotationPlannedEndDate = item.planned_end_date || '';
       closeEmployee.textContent = `${item.employee_name} · ${item.branch_name}`;
       closeDate.value = new Date().toISOString().slice(0, 10);
       closeComment.value = '';
@@ -712,11 +726,18 @@
 
     function closeCloseModal() {
       currentRotationId = '';
+      currentRotationPlannedEndDate = '';
       closeModal.classList.remove('open');
     }
 
     async function closeRotation() {
       if (!currentRotationId) return;
+
+      if (currentRotationPlannedEndDate && closeDate.value !== currentRotationPlannedEndDate && !closeComment.value.trim()) {
+        alert('Если фактическая дата окончания отличается от плановой, комментарий обязателен.');
+        closeComment.focus();
+        return;
+      }
 
       confirmCloseButton.disabled = true;
       confirmCloseButton.textContent = 'Закрытие...';
