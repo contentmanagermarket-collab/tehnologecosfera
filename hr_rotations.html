@@ -66,7 +66,7 @@
 
     button {
       min-height: 48px;
-      padding: 12px 18px;
+      padding: 12px 14px;
       border: none;
       border-radius: 16px;
       background: #96c22c;
@@ -192,17 +192,17 @@
     }
 
     .gantt-scroll {
-      overflow-x: auto;
+      overflow-x: hidden;
     }
 
     .gantt {
-      min-width: 1540px;
+      width: 100%;
     }
 
     .gantt-header,
     .gantt-row {
       display: grid;
-      grid-template-columns: 250px 210px minmax(540px, 1fr) 150px 230px 170px;
+      grid-template-columns: minmax(210px, 1.1fr) minmax(155px, 0.78fr) minmax(330px, 1.55fr) minmax(125px, 0.62fr) minmax(190px, 0.9fr) minmax(125px, 0.6fr);
       border-bottom: 1px solid #edf0e8;
     }
 
@@ -215,15 +215,16 @@
     }
 
     .gantt-cell {
-      padding: 14px;
+      padding: 12px;
       min-height: 68px;
       display: flex;
       align-items: center;
+      min-width: 0;
     }
 
     .gantt-cell.action-cell {
       justify-content: flex-end;
-      padding-right: 26px;
+      padding-right: 14px;
     }
 
     .employee {
@@ -232,13 +233,13 @@
     }
 
     .employee-name {
-      font-size: 16px;
+      font-size: 15px;
       font-weight: 800;
       color: #20242a;
     }
 
     .employee-branch {
-      font-size: 15px;
+      font-size: 14px;
       font-weight: 800;
       color: #4f5966;
     }
@@ -246,14 +247,14 @@
     .timeline {
       position: relative;
       min-height: 68px;
-      padding: 18px 20px;
+      padding: 18px 14px;
       background: #f2f5ec;
     }
 
     .bar {
       position: absolute;
       top: 50%;
-      left: 20px;
+      left: 14px;
       transform: translateY(-50%);
       height: 24px;
       min-width: 8px;
@@ -271,7 +272,7 @@
       display: flex;
       align-items: center;
       color: #344054;
-      font-size: 13px;
+      font-size: 12px;
       font-weight: 800;
       white-space: nowrap;
       pointer-events: none;
@@ -286,11 +287,11 @@
       align-items: center;
       justify-content: center;
       min-height: 34px;
-      padding: 8px 14px;
+      padding: 8px 12px;
       border-radius: 999px;
       background: #eef8dc;
       color: #3f6410;
-      font-size: 13px;
+      font-size: 12px;
       font-weight: 800;
       white-space: nowrap;
       max-width: 100%;
