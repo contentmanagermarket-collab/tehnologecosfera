@@ -128,7 +128,7 @@
 
     .filters {
       display: grid;
-      grid-template-columns: 220px 1fr auto;
+      grid-template-columns: 220px 1fr 1fr auto;
       gap: 14px;
       align-items: end;
     }
@@ -202,7 +202,7 @@
     .gantt-header,
     .gantt-row {
       display: grid;
-      grid-template-columns: 260px minmax(360px, 0.82fr) 220px 130px;
+      grid-template-columns: 260px minmax(300px, 0.62fr) 150px 220px 130px;
       border-bottom: 1px solid #edf0e8;
     }
 
@@ -419,6 +419,10 @@
             <option value="">Все объекты</option>
           </select>
         </div>
+        <div>
+          <label for="employeeSearch">Поиск сотрудника</label>
+          <input id="employeeSearch" type="search" placeholder="ФИО сотрудника по всем объектам" />
+        </div>
         <button id="applyButton" type="button">Показать</button>
       </div>
 
@@ -430,6 +434,7 @@
             <div class="gantt-header">
               <div class="gantt-cell">Сотрудник</div>
               <div class="gantt-cell">Период</div>
+              <div class="gantt-cell">Дата начала</div>
               <div class="gantt-cell">Плановое окончание</div>
               <div class="gantt-cell">Действие</div>
             </div>
@@ -472,6 +477,7 @@
     const applyButton = document.getElementById('applyButton');
     const monthInput = document.getElementById('monthInput');
     const branchSelect = document.getElementById('branchSelect');
+    const employeeSearch = document.getElementById('employeeSearch');
     const message = document.getElementById('message');
     const ganttBody = document.getElementById('ganttBody');
     const hrMeta = document.getElementById('hrMeta');
@@ -540,6 +546,28 @@
       document.getElementById('totalAll').textContent = totals.all || 0;
     }
 
+    function calculateTotals(items) {
+      return {
+        current: items.filter((item) => item.raw_status === 'open' && item.status !== 'overdue').length,
+        ending_soon: items.filter((item) => item.status === 'ending_soon').length,
+        overdue: items.filter((item) => item.status === 'overdue').length,
+        all: items.length
+      };
+    }
+
+    function filterByEmployee(items) {
+      const query = employeeSearch.value.trim().toLowerCase();
+
+      if (!query) {
+        return items;
+      }
+
+      return items.filter((item) => {
+        const name = String(item.employee_name || '').toLowerCase();
+        return name.includes(query);
+      });
+    }
+
     function renderGantt(items) {
       ganttBody.innerHTML = '';
 
@@ -571,6 +599,9 @@
           <div class="timeline">
             <div class="bar ${statusClass(item)}" style="width:${barWidth};"></div>
             <div class="bar-label">${daysText}</div>
+          </div>
+          <div class="gantt-cell">
+            <span class="badge">${item.start_date_display || '-'}</span>
           </div>
           <div class="gantt-cell">
             <span class="badge ${statusClass(item)}">${item.planned_end_date_display || '-'} · ${item.planned_duration_days} дней</span>
@@ -637,7 +668,7 @@
       url.searchParams.set('token', token);
       url.searchParams.set('month', monthInput.value);
 
-      if (branchSelect.value) {
+      if (branchSelect.value && !employeeSearch.value.trim()) {
         url.searchParams.set('branch_id', branchSelect.value);
       }
 
@@ -649,8 +680,9 @@
           throw new Error(result.message || 'Не удалось загрузить вахты.');
         }
 
-        renderTotals(result.totals || {});
-        renderGantt(result.items || []);
+        const visibleItems = filterByEmployee(result.items || []);
+        renderTotals(calculateTotals(visibleItems));
+        renderGantt(visibleItems);
       } catch (error) {
         showMessage('error', error.message);
         renderTotals({});
@@ -710,6 +742,12 @@
     loginButton.addEventListener('click', login);
     refreshButton.addEventListener('click', loadRotations);
     applyButton.addEventListener('click', loadRotations);
+    employeeSearch.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        loadRotations();
+      }
+    });
     cancelCloseButton.addEventListener('click', closeCloseModal);
     confirmCloseButton.addEventListener('click', closeRotation);
 
