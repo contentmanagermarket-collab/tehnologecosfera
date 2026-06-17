@@ -202,7 +202,7 @@
     .gantt-header,
     .gantt-row {
       display: grid;
-      grid-template-columns: 260px 1fr 150px 130px;
+      grid-template-columns: 260px minmax(360px, 0.82fr) 220px 130px;
       border-bottom: 1px solid #edf0e8;
     }
 
@@ -259,13 +259,16 @@
     .bar-label {
       position: absolute;
       top: 18px;
-      right: 14px;
+      left: 50%;
+      transform: translateX(-50%);
       height: 22px;
       display: flex;
       align-items: center;
-      color: #4f5966;
+      color: #344054;
       font-size: 13px;
       font-weight: 800;
+      white-space: nowrap;
+      pointer-events: none;
     }
 
     .bar.ending_soon { background: #d79722; }
@@ -277,13 +280,14 @@
       align-items: center;
       justify-content: center;
       min-height: 34px;
-      padding: 8px 12px;
+      padding: 8px 14px;
       border-radius: 999px;
       background: #eef8dc;
       color: #3f6410;
       font-size: 13px;
       font-weight: 800;
       white-space: nowrap;
+      max-width: 100%;
     }
 
     .badge.ending_soon {
@@ -569,7 +573,7 @@
             <div class="bar-label">${daysText}</div>
           </div>
           <div class="gantt-cell">
-            <span class="badge ${statusClass(item)}">${item.planned_end_date_display || '-'} · ${item.planned_duration_days} дней · ${statusText(item)}</span>
+            <span class="badge ${statusClass(item)}">${item.planned_end_date_display || '-'} · ${item.planned_duration_days} дней</span>
           </div>
           <div class="gantt-cell">
             ${item.raw_status === 'open' ? `<button type="button" data-close="${item._id}">Закрыть</button>` : ''}
