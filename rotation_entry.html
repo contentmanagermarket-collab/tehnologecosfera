@@ -146,11 +146,16 @@
   <main class="card">
     <img class="logo" src="logo.png" alt="Экосфера" />
     <h1>ОТКРЫТИЕ ВАХТЫ</h1>
-    <div class="subtitle" id="branchHint">Объект определяется по QR-коду</div>
+    <div class="subtitle" id="branchHint">Выберите объект и откройте вахту</div>
 
     <form id="rotationForm">
       <label for="employee">ФИО сотрудника</label>
       <input id="employee" type="text" autocomplete="name" required placeholder="Введите ФИО полностью" />
+
+      <label for="branchId">Объект</label>
+      <select id="branchId" required>
+        <option value="">Загрузка объектов...</option>
+      </select>
 
       <div class="grid">
         <div>
@@ -187,38 +192,57 @@
 
   <script>
     const BACKEND_URL = 'https://ekosfera.midera.fun/web/rotation/open';
-    const params = new URLSearchParams(window.location.search);
-    const branchId = params.get('branch_id') || '';
+    const BRANCHES_URL = 'https://ekosfera.midera.fun/web/rotation/branches';
 
     const form = document.getElementById('rotationForm');
     const message = document.getElementById('message');
     const button = document.getElementById('submitButton');
     const branchHint = document.getElementById('branchHint');
+    const branchSelect = document.getElementById('branchId');
     const startDate = document.getElementById('startDate');
 
     startDate.value = new Date().toISOString().slice(0, 10);
-
-    if (!branchId) {
-      branchHint.textContent = 'Страница открыта без QR-кода объекта';
-      branchHint.style.color = '#b33424';
-    }
 
     function showMessage(type, text) {
       message.className = `message ${type}`;
       message.textContent = text;
     }
 
+    async function loadBranches() {
+      try {
+        const response = await fetch(BRANCHES_URL);
+        const result = await response.json();
+
+        if (!result.success) {
+          throw new Error(result.message || 'Не удалось загрузить объекты.');
+        }
+
+        branchSelect.innerHTML = '<option value="">Выберите объект</option>';
+
+        result.branches.forEach((branch) => {
+          const option = document.createElement('option');
+          option.value = branch._id || branch.code;
+          option.textContent = branch.name;
+          branchSelect.appendChild(option);
+        });
+      } catch (error) {
+        branchSelect.innerHTML = '<option value="">Объекты не загрузились</option>';
+        branchHint.textContent = error.message;
+        branchHint.style.color = '#b33424';
+      }
+    }
+
     form.addEventListener('submit', async (event) => {
       event.preventDefault();
 
-      if (!branchId) {
-        showMessage('error', 'Страница открыта без QR-кода объекта. Отсканируйте QR-код на объекте.');
+      if (!branchSelect.value) {
+        showMessage('error', 'Выберите объект.');
         return;
       }
 
       const payload = {
         employee: document.getElementById('employee').value.trim(),
-        branch_id: branchId,
+        branch_id: branchSelect.value,
         start_date: startDate.value,
         duration_days: Number(document.getElementById('durationDays').value),
         opened_by_role: document.getElementById('openedByRole').value,
@@ -248,6 +272,7 @@
         showMessage('success', result.message || 'Вахта открыта.');
         form.reset();
         startDate.value = new Date().toISOString().slice(0, 10);
+        branchSelect.value = '';
       } catch (error) {
         showMessage('error', `Ошибка: ${error.message}`);
       } finally {
@@ -255,6 +280,8 @@
         button.textContent = 'Открыть вахту';
       }
     });
+
+    loadBranches();
   </script>
 </body>
 </html>
