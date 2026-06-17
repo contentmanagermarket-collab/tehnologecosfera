@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HR контроль вахт</title>
+
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Arial, sans-serif;
+      background: #f4f6f2;
+      color: #20242a;
+      padding: 24px;
+    }
+
+    .shell {
+      width: 100%;
+      max-width: 1280px;
+      margin: 0 auto;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      margin-bottom: 22px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      min-width: 0;
+    }
+
+    .logo {
+      width: 170px;
+      max-width: 42vw;
+      height: auto;
+      flex: 0 0 auto;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 28px;
+      line-height: 1.15;
+    }
+
+    .meta {
+      margin-top: 6px;
+      font-size: 15px;
+      color: #5f6670;
+    }
+
+    .actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    button {
+      min-height: 48px;
+      padding: 12px 18px;
+      border: none;
+      border-radius: 16px;
+      background: #96c22c;
+      color: #ffffff;
+      font-size: 15px;
+      font-weight: 800;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    button.secondary {
+      background: #6a6a6a;
+    }
+
+    button.danger {
+      background: #c44c38;
+    }
+
+    button:disabled {
+      opacity: 0.65;
+      cursor: default;
+    }
+
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+
+    .summary-card {
+      min-height: 104px;
+      background: #ffffff;
+      border-radius: 22px;
+      padding: 22px;
+      box-shadow: 0 14px 32px rgba(32, 36, 42, 0.06);
+    }
+
+    .summary-value {
+      font-size: 30px;
+      line-height: 1;
+      font-weight: 800;
+    }
+
+    .summary-label {
+      margin-top: 8px;
+      font-size: 15px;
+      color: #4f5966;
+    }
+
+    .filters,
+    .login-card {
+      background: #ffffff;
+      border-radius: 22px;
+      padding: 22px;
+      box-shadow: 0 14px 32px rgba(32, 36, 42, 0.06);
+      margin-bottom: 20px;
+    }
+
+    .filters {
+      display: grid;
+      grid-template-columns: 220px 1fr auto;
+      gap: 14px;
+      align-items: end;
+    }
+
+    label {
+      display: block;
+      margin: 0 0 8px;
+      color: #4f5966;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    input,
+    select,
+    textarea {
+      width: 100%;
+      min-height: 48px;
+      border: 1px solid #dfe5d8;
+      border-radius: 14px;
+      padding: 12px 14px;
+      font-size: 16px;
+      font-family: Arial, sans-serif;
+      background: #ffffff;
+      outline: none;
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+      border-color: #96c22c;
+      box-shadow: 0 0 0 4px rgba(150, 194, 44, 0.18);
+    }
+
+    .message {
+      display: none;
+      margin-bottom: 18px;
+      padding: 14px 16px;
+      border-radius: 14px;
+      font-size: 15px;
+    }
+
+    .message.error {
+      display: block;
+      background: #fff0ee;
+      border: 1px solid #f0c5bd;
+      color: #b33424;
+    }
+
+    .message.success {
+      display: block;
+      background: #eef8dc;
+      border: 1px solid #cfe8a2;
+      color: #3f6410;
+    }
+
+    .gantt-card {
+      background: #ffffff;
+      border-radius: 22px;
+      box-shadow: 0 14px 32px rgba(32, 36, 42, 0.06);
+      overflow: hidden;
+    }
+
+    .gantt-scroll {
+      overflow-x: auto;
+    }
+
+    .gantt {
+      min-width: 1080px;
+    }
+
+    .gantt-header,
+    .gantt-row {
+      display: grid;
+      grid-template-columns: 260px 1fr 150px 130px;
+      border-bottom: 1px solid #edf0e8;
+    }
+
+    .gantt-header {
+      background: #f8faf4;
+      color: #4f5966;
+      font-size: 13px;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .gantt-cell {
+      padding: 14px;
+      min-height: 58px;
+      display: flex;
+      align-items: center;
+    }
+
+    .employee {
+      display: block;
+      min-width: 0;
+    }
+
+    .employee-name {
+      font-size: 16px;
+      font-weight: 800;
+      color: #20242a;
+    }
+
+    .employee-branch {
+      margin-top: 4px;
+      font-size: 13px;
+      color: #687281;
+    }
+
+    .timeline {
+      position: relative;
+      min-height: 58px;
+      padding: 18px 14px;
+      background:
+        repeating-linear-gradient(
+          to right,
+          #ffffff 0,
+          #ffffff calc(100% / 31 - 1px),
+          #edf0e8 calc(100% / 31 - 1px),
+          #edf0e8 calc(100% / 31)
+        );
+    }
+
+    .bar {
+      position: absolute;
+      top: 18px;
+      height: 22px;
+      min-width: 8px;
+      border-radius: 999px;
+      background: #96c22c;
+      box-shadow: 0 5px 12px rgba(32, 36, 42, 0.12);
+    }
+
+    .bar.ending_soon { background: #d79722; }
+    .bar.overdue { background: #c44c38; }
+    .bar.closed { background: #8b929b; }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 34px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: #eef8dc;
+      color: #3f6410;
+      font-size: 13px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .badge.ending_soon {
+      background: #fff4dc;
+      color: #8a5a00;
+    }
+
+    .badge.overdue {
+      background: #fff0ee;
+      color: #b33424;
+    }
+
+    .badge.closed {
+      background: #eef0f2;
+      color: #5f6670;
+    }
+
+    .empty {
+      padding: 44px 20px;
+      text-align: center;
+      color: #5f6670;
+      font-size: 17px;
+    }
+
+    .modal {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0, 0, 0, 0.36);
+      padding: 20px;
+      z-index: 20;
+    }
+
+    .modal.open {
+      display: flex;
+    }
+
+    .modal-card {
+      width: 100%;
+      max-width: 460px;
+      background: #ffffff;
+      border-radius: 22px;
+      padding: 24px;
+    }
+
+    .modal-title {
+      margin: 0 0 16px;
+      font-size: 22px;
+      font-weight: 800;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .modal-actions button {
+      flex: 1;
+    }
+
+    @media (max-width: 760px) {
+      body { padding: 14px; }
+      .topbar { align-items: flex-start; flex-direction: column; }
+      .summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .filters { grid-template-columns: 1fr; }
+      .logo { width: 150px; }
+      h1 { font-size: 24px; }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="shell">
+    <section id="loginCard" class="login-card">
+      <img class="logo" src="logo.png" alt="Экосфера" />
+      <h1>HR контроль вахт</h1>
+      <p class="meta">Введите HR-токен для доступа к объектам</p>
+      <label for="tokenInput">Токен</label>
+      <input id="tokenInput" type="password" placeholder="Введите токен" />
+      <button id="loginButton" type="button">Войти</button>
+    </section>
+
+    <section id="dashboard" style="display:none;">
+      <div class="topbar">
+        <div class="brand">
+          <img class="logo" src="logo.png" alt="Экосфера" />
+          <div>
+            <h1>HR контроль вахт</h1>
+            <div id="hrMeta" class="meta"></div>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button id="refreshButton" type="button">Обновить</button>
+          <button id="logoutButton" type="button" class="secondary">Выйти</button>
+        </div>
+      </div>
+
+      <div class="summary">
+        <div class="summary-card">
+          <div id="totalCurrent" class="summary-value">0</div>
+          <div class="summary-label">Сейчас на вахте</div>
+        </div>
+        <div class="summary-card">
+          <div id="totalEnding" class="summary-value">0</div>
+          <div class="summary-label">Заканчивают до 7 дней</div>
+        </div>
+        <div class="summary-card">
+          <div id="totalOverdue" class="summary-value">0</div>
+          <div class="summary-label">Просрочено</div>
+        </div>
+        <div class="summary-card">
+          <div id="totalAll" class="summary-value">0</div>
+          <div class="summary-label">Всего в периоде</div>
+        </div>
+      </div>
+
+      <div class="filters">
+        <div>
+          <label for="monthInput">Месяц</label>
+          <input id="monthInput" type="month" />
+        </div>
+        <div>
+          <label for="branchSelect">Объект</label>
+          <select id="branchSelect">
+            <option value="">Все объекты</option>
+          </select>
+        </div>
+        <button id="applyButton" type="button">Показать</button>
+      </div>
+
+      <div id="message" class="message"></div>
+
+      <section class="gantt-card">
+        <div class="gantt-scroll">
+          <div class="gantt">
+            <div class="gantt-header">
+              <div class="gantt-cell">Сотрудник</div>
+              <div class="gantt-cell">Период</div>
+              <div class="gantt-cell">Окончание</div>
+              <div class="gantt-cell">Действие</div>
+            </div>
+            <div id="ganttBody"></div>
+          </div>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <div id="closeModal" class="modal">
+    <div class="modal-card">
+      <h2 class="modal-title">Закрыть вахту</h2>
+      <div id="closeEmployee" class="meta"></div>
+
+      <label for="closeDate">Фактическая дата окончания</label>
+      <input id="closeDate" type="date" />
+
+      <label for="closeComment">Комментарий</label>
+      <textarea id="closeComment" placeholder="Причина корректировки, если есть"></textarea>
+
+      <div class="modal-actions">
+        <button id="cancelCloseButton" type="button" class="secondary">Отмена</button>
+        <button id="confirmCloseButton" type="button" class="danger">Закрыть</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = 'https://ekosfera.midera.fun/web';
+    const params = new URLSearchParams(window.location.search);
+    const initialToken = params.get('token') || localStorage.getItem('eko_hr_token') || '';
+
+    const loginCard = document.getElementById('loginCard');
+    const dashboard = document.getElementById('dashboard');
+    const tokenInput = document.getElementById('tokenInput');
+    const loginButton = document.getElementById('loginButton');
+    const logoutButton = document.getElementById('logoutButton');
+    const refreshButton = document.getElementById('refreshButton');
+    const applyButton = document.getElementById('applyButton');
+    const monthInput = document.getElementById('monthInput');
+    const branchSelect = document.getElementById('branchSelect');
+    const message = document.getElementById('message');
+    const ganttBody = document.getElementById('ganttBody');
+    const hrMeta = document.getElementById('hrMeta');
+
+    const closeModal = document.getElementById('closeModal');
+    const closeEmployee = document.getElementById('closeEmployee');
+    const closeDate = document.getElementById('closeDate');
+    const closeComment = document.getElementById('closeComment');
+    const cancelCloseButton = document.getElementById('cancelCloseButton');
+    const confirmCloseButton = document.getElementById('confirmCloseButton');
+
+    let token = initialToken;
+    let currentRotationId = '';
+    let currentHrName = '';
+
+    tokenInput.value = initialToken;
+    monthInput.value = new Date().toISOString().slice(0, 7);
+
+    function showMessage(type, text) {
+      message.className = text ? `message ${type}` : 'message';
+      message.textContent = text || '';
+    }
+
+    function monthBounds(monthValue) {
+      const [year, month] = monthValue.split('-').map(Number);
+      const start = new Date(year, month - 1, 1);
+      const end = new Date(year, month, 0);
+      return { start, end, days: end.getDate() };
+    }
+
+    function parseDate(value) {
+      if (!value) return null;
+      const parts = value.split('-').map(Number);
+      return new Date(parts[0], parts[1] - 1, parts[2]);
+    }
+
+    function clamp(value, min, max) {
+      return Math.min(Math.max(value, min), max);
+    }
+
+    function statusText(item) {
+      if (item.status === 'closed') return 'Закрыта';
+      if (item.status === 'overdue') return 'Просрочено';
+      if (item.status === 'ending_soon') return 'Скоро окончание';
+      return 'Идет';
+    }
+
+    function statusClass(item) {
+      return item.status || 'open';
+    }
+
+    function renderBranches(branches) {
+      branchSelect.innerHTML = '<option value="">Все объекты</option>';
+      branches.forEach((branch) => {
+        const option = document.createElement('option');
+        option.value = branch._id || branch.code;
+        option.textContent = branch.name;
+        branchSelect.appendChild(option);
+      });
+    }
+
+    function renderTotals(totals) {
+      document.getElementById('totalCurrent').textContent = totals.current || 0;
+      document.getElementById('totalEnding').textContent = totals.ending_soon || 0;
+      document.getElementById('totalOverdue').textContent = totals.overdue || 0;
+      document.getElementById('totalAll').textContent = totals.all || 0;
+    }
+
+    function renderGantt(items) {
+      ganttBody.innerHTML = '';
+
+      if (!items.length) {
+        ganttBody.innerHTML = '<div class="empty">Вахт за выбранный период нет.</div>';
+        return;
+      }
+
+      const bounds = monthBounds(monthInput.value);
+      const dayMs = 24 * 60 * 60 * 1000;
+
+      items.forEach((item) => {
+        const row = document.createElement('div');
+        row.className = 'gantt-row';
+
+        const start = parseDate(item.start_date);
+        const end = parseDate(item.actual_end_date || item.planned_end_date);
+
+        let left = 0;
+        let width = 0;
+
+        if (start && end) {
+          const visibleStart = new Date(Math.max(start.getTime(), bounds.start.getTime()));
+          const visibleEnd = new Date(Math.min(end.getTime(), bounds.end.getTime()));
+          left = ((visibleStart - bounds.start) / dayMs) / bounds.days * 100;
+          width = ((visibleEnd - visibleStart) / dayMs + 1) / bounds.days * 100;
+          left = clamp(left, 0, 100);
+          width = clamp(width, 1, 100 - left);
+        }
+
+        row.innerHTML = `
+          <div class="gantt-cell employee">
+            <div>
+              <div class="employee-name">${item.employee_name || '-'}</div>
+              <div class="employee-branch">${item.branch_name || '-'}</div>
+            </div>
+          </div>
+          <div class="timeline">
+            <div class="bar ${statusClass(item)}" style="left:${left}%; width:${width}%;"></div>
+          </div>
+          <div class="gantt-cell">
+            <span class="badge ${statusClass(item)}">${item.planned_end_date_display || '-'} · ${statusText(item)}</span>
+          </div>
+          <div class="gantt-cell">
+            ${item.raw_status === 'open' ? `<button type="button" data-close="${item._id}">Закрыть</button>` : ''}
+          </div>
+        `;
+
+        ganttBody.appendChild(row);
+      });
+
+      ganttBody.querySelectorAll('[data-close]').forEach((button) => {
+        button.addEventListener('click', () => {
+          const item = items.find((entry) => entry._id === button.dataset.close);
+          openCloseModal(item);
+        });
+      });
+    }
+
+    async function login() {
+      token = tokenInput.value.trim();
+
+      if (!token) {
+        alert('Введите токен.');
+        return;
+      }
+
+      loginButton.disabled = true;
+      loginButton.textContent = 'Вход...';
+
+      try {
+        const response = await fetch(`${API_BASE}/hr/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token })
+        });
+        const result = await response.json();
+
+        if (!result.success) {
+          throw new Error(result.message || 'Доступ запрещен.');
+        }
+
+        localStorage.setItem('eko_hr_token', token);
+        currentHrName = result.hr.name || '';
+        hrMeta.textContent = `${currentHrName} · объектов: ${result.branches.length}`;
+        renderBranches(result.branches || []);
+        loginCard.style.display = 'none';
+        dashboard.style.display = 'block';
+        await loadRotations();
+      } catch (error) {
+        alert(error.message);
+      } finally {
+        loginButton.disabled = false;
+        loginButton.textContent = 'Войти';
+      }
+    }
+
+    async function loadRotations() {
+      showMessage('', '');
+      refreshButton.disabled = true;
+
+      const url = new URL(`${API_BASE}/hr/rotations`);
+      url.searchParams.set('token', token);
+      url.searchParams.set('month', monthInput.value);
+
+      if (branchSelect.value) {
+        url.searchParams.set('branch_id', branchSelect.value);
+      }
+
+      try {
+        const response = await fetch(url.toString());
+        const result = await response.json();
+
+        if (!result.success) {
+          throw new Error(result.message || 'Не удалось загрузить вахты.');
+        }
+
+        renderTotals(result.totals || {});
+        renderGantt(result.items || []);
+      } catch (error) {
+        showMessage('error', error.message);
+        renderTotals({});
+        renderGantt([]);
+      } finally {
+        refreshButton.disabled = false;
+      }
+    }
+
+    function openCloseModal(item) {
+      currentRotationId = item._id;
+      closeEmployee.textContent = `${item.employee_name} · ${item.branch_name}`;
+      closeDate.value = new Date().toISOString().slice(0, 10);
+      closeComment.value = '';
+      closeModal.classList.add('open');
+    }
+
+    function closeCloseModal() {
+      currentRotationId = '';
+      closeModal.classList.remove('open');
+    }
+
+    async function closeRotation() {
+      if (!currentRotationId) return;
+
+      confirmCloseButton.disabled = true;
+      confirmCloseButton.textContent = 'Закрытие...';
+
+      try {
+        const response = await fetch(`${API_BASE}/rotation/${currentRotationId}/close`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            token,
+            actual_end_date: closeDate.value,
+            closed_by_name: currentHrName,
+            comment: closeComment.value.trim()
+          })
+        });
+        const result = await response.json();
+
+        if (!result.success) {
+          throw new Error(result.message || 'Не удалось закрыть вахту.');
+        }
+
+        closeCloseModal();
+        showMessage('success', result.message || 'Вахта закрыта.');
+        await loadRotations();
+      } catch (error) {
+        alert(error.message);
+      } finally {
+        confirmCloseButton.disabled = false;
+        confirmCloseButton.textContent = 'Закрыть';
+      }
+    }
+
+    loginButton.addEventListener('click', login);
+    refreshButton.addEventListener('click', loadRotations);
+    applyButton.addEventListener('click', loadRotations);
+    cancelCloseButton.addEventListener('click', closeCloseModal);
+    confirmCloseButton.addEventListener('click', closeRotation);
+
+    logoutButton.addEventListener('click', () => {
+      localStorage.removeItem('eko_hr_token');
+      token = '';
+      tokenInput.value = '';
+      dashboard.style.display = 'none';
+      loginCard.style.display = 'block';
+    });
+
+    if (initialToken) {
+      login();
+    }
+  </script>
+</body>
+</html>
