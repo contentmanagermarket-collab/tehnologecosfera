@@ -81,6 +81,15 @@
       background: #6a6a6a;
     }
 
+    button.filter-toggle {
+      background: #6a6a6a;
+    }
+
+    button.filter-toggle.active {
+      background: #8b929b;
+      box-shadow: inset 0 0 0 3px rgba(255, 255, 255, 0.32);
+    }
+
     button.danger {
       background: #c44c38;
     }
@@ -391,6 +400,8 @@
         </div>
 
         <div class="actions">
+          <button id="allShiftsButton" type="button" class="filter-toggle active">Все смены</button>
+          <button id="closedOnlyButton" type="button" class="filter-toggle">Закрытые смены</button>
           <button id="refreshButton" type="button">Обновить</button>
           <button id="logoutButton" type="button" class="secondary">Выйти</button>
         </div>
@@ -481,6 +492,8 @@
     const tokenInput = document.getElementById('tokenInput');
     const loginButton = document.getElementById('loginButton');
     const logoutButton = document.getElementById('logoutButton');
+    const allShiftsButton = document.getElementById('allShiftsButton');
+    const closedOnlyButton = document.getElementById('closedOnlyButton');
     const refreshButton = document.getElementById('refreshButton');
     const applyButton = document.getElementById('applyButton');
     const monthInput = document.getElementById('monthInput');
@@ -501,9 +514,32 @@
     let currentRotationId = '';
     let currentRotationPlannedEndDate = '';
     let currentHrName = '';
+    let viewMode = 'all';
 
     tokenInput.value = initialToken;
-    monthInput.value = new Date().toISOString().slice(0, 7);
+    monthInput.value = currentMonth();
+
+    function currentMonth() {
+      return new Date().toISOString().slice(0, 7);
+    }
+
+    function resetMainFilters() {
+      monthInput.value = currentMonth();
+      branchSelect.value = '';
+      employeeSearch.value = '';
+    }
+
+    function updateModeButtons() {
+      allShiftsButton.classList.toggle('active', viewMode === 'all');
+      closedOnlyButton.classList.toggle('active', viewMode === 'closed');
+    }
+
+    function switchViewMode(mode) {
+      viewMode = mode;
+      resetMainFilters();
+      updateModeButtons();
+      loadRotations();
+    }
 
     function showMessage(type, text) {
       message.className = text ? `message ${type}` : 'message';
@@ -586,6 +622,16 @@
         const name = String(item.employee_name || '').toLowerCase();
         return name.includes(query);
       });
+    }
+
+    function applyClientFilters(items) {
+      let filtered = filterByEmployee(items);
+
+      if (viewMode === 'closed') {
+        filtered = filtered.filter((item) => item.raw_status === 'closed' || item.status === 'closed');
+      }
+
+      return filtered;
     }
 
     function renderGantt(items) {
@@ -703,7 +749,7 @@
           throw new Error(result.message || 'Не удалось загрузить вахты.');
         }
 
-        const visibleItems = filterByEmployee(result.items || []);
+        const visibleItems = applyClientFilters(result.items || []);
         renderTotals(calculateTotals(visibleItems));
         renderGantt(visibleItems);
       } catch (error) {
@@ -771,6 +817,8 @@
     }
 
     loginButton.addEventListener('click', login);
+    allShiftsButton.addEventListener('click', () => switchViewMode('all'));
+    closedOnlyButton.addEventListener('click', () => switchViewMode('closed'));
     refreshButton.addEventListener('click', loadRotations);
     applyButton.addEventListener('click', loadRotations);
     employeeSearch.addEventListener('keydown', (event) => {
