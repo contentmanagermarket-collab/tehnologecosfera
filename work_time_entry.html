@@ -83,6 +83,25 @@
       resize: vertical;
     }
 
+    .hint {
+      margin-top: 8px;
+      font-size: 13px;
+      line-height: 1.35;
+      color: #6a6a6a;
+    }
+
+    .inspector-box {
+      margin-top: 18px;
+      padding: 16px;
+      border: 1px solid #e1e8d8;
+      border-radius: 18px;
+      background: #fbfff3;
+    }
+
+    .inspector-box label {
+      margin-top: 0;
+    }
+
     .upload-box {
       margin-top: 8px;
       border: 2px dashed #96c22c;
@@ -157,6 +176,11 @@
       background: #555555;
     }
 
+    .submit-button:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+    }
+
     @media (max-width: 520px) {
       body { padding: 14px; align-items: flex-start; }
       .card { padding: 24px 18px; border-radius: 22px; }
@@ -181,10 +205,25 @@
       <label for="comment">Комментарий</label>
       <textarea id="comment" name="comment" placeholder="Введите комментарий"></textarea>
 
+      <div class="inspector-box">
+        <label for="inspectorToken">Токен проверяющего</label>
+        <input id="inspectorToken" name="inspectorToken" type="password" placeholder="Заполняет только проверяющий" />
+        <div class="hint">
+          Если смену открывает или закрывает проверяющий за сотрудника без фото, комментарий обязателен.
+        </div>
+      </div>
+
       <label for="photo">Фото</label>
       <div class="upload-box">
-        <input class="file-input" id="photo" name="photo" type="file" accept="image/jpeg,image/png,image/webp" />
-        <label class="upload-button" for="photo">Загрузить фото</label>
+        <input
+          class="file-input"
+          id="photo"
+          name="photo"
+          type="file"
+          accept="image/*"
+          capture="environment"
+        />
+        <label class="upload-button" for="photo">Сделать фото</label>
         <div class="file-name" id="fileName">Файл не выбран</div>
         <img class="preview" id="preview" alt="Предпросмотр фото" />
       </div>
@@ -231,7 +270,7 @@
         return;
       }
 
-      fileName.textContent = file.name;
+      fileName.textContent = `${file.name} (${formatBytes(file.size)})`;
 
       const reader = new FileReader();
       reader.onload = event => {
@@ -255,6 +294,34 @@
       }
     }
 
+    function formatBytes(bytes) {
+      if (!bytes && bytes !== 0) {
+        return '';
+      }
+
+      if (bytes < 1024) {
+        return `${bytes} Б`;
+      }
+
+      if (bytes < 1024 * 1024) {
+        return `${(bytes / 1024).toFixed(1)} КБ`;
+      }
+
+      return `${(bytes / 1024 / 1024).toFixed(1)} МБ`;
+    }
+
+    function delay(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    function createId() {
+      if (window.crypto && crypto.randomUUID) {
+        return crypto.randomUUID();
+      }
+
+      return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    }
+
     async function readJsonResponse(response) {
       const text = await response.text();
 
@@ -269,57 +336,95 @@
       }
     }
 
-    function compressImage(file) {
-      const maxSize = 1400;
-      const quality = 0.78;
+    function canvasToBlob(canvas, type, quality) {
+      return new Promise((resolve, reject) => {
+        canvas.toBlob(blob => {
+          if (!blob) {
+            reject(new Error('Не удалось сжать фото.'));
+            return;
+          }
+
+          resolve(blob);
+        }, type, quality);
+      });
+    }
+
+    async function compressImage(file) {
+      const maxSize = 900;
+      const qualitySteps = [0.62, 0.55, 0.48, 0.42];
+      const targetMaxBytes = 650 * 1024;
+
+      if (!file.type || !file.type.startsWith('image/')) {
+        throw new Error('Выбранный файл не похож на фото. Выберите изображение из галереи или камеры.');
+      }
 
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
 
         reader.onerror = () => {
-          reject(new Error('Не удалось прочитать фото.'));
+          reject(new Error('Не удалось прочитать фото на телефоне.'));
         };
 
         reader.onload = event => {
           const image = new Image();
 
           image.onerror = () => {
-            reject(new Error('Не удалось подготовить фото.'));
+            reject(new Error('Не удалось подготовить фото. Если это HEIC/Live Photo, выберите обычное фото JPG.'));
           };
 
-          image.onload = () => {
-            let width = image.width;
-            let height = image.height;
+          image.onload = async () => {
+            try {
+              let width = image.width;
+              let height = image.height;
 
-            if (width > height && width > maxSize) {
-              height = Math.round((height * maxSize) / width);
-              width = maxSize;
-            } else if (height > maxSize) {
-              width = Math.round((width * maxSize) / height);
-              height = maxSize;
-            }
+              if (!width || !height) {
+                reject(new Error('Фото повреждено или не читается браузером.'));
+                return;
+              }
 
-            const canvas = document.createElement('canvas');
-            canvas.width = width;
-            canvas.height = height;
+              if (width > height && width > maxSize) {
+                height = Math.round((height * maxSize) / width);
+                width = maxSize;
+              } else if (height > maxSize) {
+                width = Math.round((width * maxSize) / height);
+                height = maxSize;
+              }
 
-            const context = canvas.getContext('2d');
-            context.drawImage(image, 0, 0, width, height);
+              const canvas = document.createElement('canvas');
+              canvas.width = width;
+              canvas.height = height;
 
-            canvas.toBlob(blob => {
-              if (!blob) {
+              const context = canvas.getContext('2d');
+              context.fillStyle = '#ffffff';
+              context.fillRect(0, 0, width, height);
+              context.drawImage(image, 0, 0, width, height);
+
+              let finalBlob = null;
+
+              for (const quality of qualitySteps) {
+                const blob = await canvasToBlob(canvas, 'image/jpeg', quality);
+                finalBlob = blob;
+
+                if (blob.size <= targetMaxBytes) {
+                  break;
+                }
+              }
+
+              if (!finalBlob) {
                 reject(new Error('Не удалось сжать фото.'));
                 return;
               }
 
               const compressedFile = new File(
-                [blob],
+                [finalBlob],
                 'shift_photo.jpg',
                 { type: 'image/jpeg' }
               );
 
               resolve(compressedFile);
-            }, 'image/jpeg', quality);
+            } catch (error) {
+              reject(error);
+            }
           };
 
           image.src = event.target.result;
@@ -329,21 +434,91 @@
       });
     }
 
+    async function uploadWithTimeout(filePath, uploadFile, timeoutMs) {
+      const uploadPromise = supabaseClient
+        .storage
+        .from('work_photos')
+        .upload(filePath, uploadFile, {
+          cacheControl: '3600',
+          contentType: 'image/jpeg',
+          upsert: true
+        });
+
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => {
+          reject(new Error('Превышено время ожидания загрузки фото. Проверьте интернет и попробуйте еще раз.'));
+        }, timeoutMs);
+      });
+
+      return Promise.race([uploadPromise, timeoutPromise]);
+    }
+
+    async function uploadPhotoToSupabase(uploadFile) {
+      const randomId = createId();
+      const filePath = `shift_photos/${randomId}.jpg`;
+      let lastErrorMessage = '';
+
+      for (let attempt = 1; attempt <= 3; attempt += 1) {
+        try {
+          const result = await uploadWithTimeout(filePath, uploadFile, 35000);
+
+          if (result && result.error) {
+            lastErrorMessage = result.error.message || 'Supabase вернул ошибку без текста.';
+            throw new Error(lastErrorMessage);
+          }
+
+          const { data: publicUrlData } = supabaseClient
+            .storage
+            .from('work_photos')
+            .getPublicUrl(filePath);
+
+          if (!publicUrlData || !publicUrlData.publicUrl) {
+            throw new Error('Supabase загрузил фото, но не вернул публичную ссылку.');
+          }
+
+          return publicUrlData.publicUrl;
+        } catch (error) {
+          lastErrorMessage = error.message || String(error);
+
+          if (attempt < 3) {
+            await delay(1200 * attempt);
+            continue;
+          }
+        }
+      }
+
+      const lowerMessage = lastErrorMessage.toLowerCase();
+
+      if (
+        lowerMessage.includes('load failed') ||
+        lowerMessage.includes('failed to fetch') ||
+        lowerMessage.includes('network') ||
+        lowerMessage.includes('timeout') ||
+        lowerMessage.includes('превышено время')
+      ) {
+        throw new Error(
+          `Supabase не принял фото после 3 попыток. Фото уже сжато до ${formatBytes(uploadFile.size)}. ` +
+          `Чаще всего причина: слабый интернет, мобильный Safari или временный сбой Supabase. ` +
+          `Попробуйте переключить интернет Wi-Fi/LTE и отправить еще раз. Технически: ${lastErrorMessage}`
+        );
+      }
+
+      throw new Error(`Supabase не принял фото после 3 попыток. Технически: ${lastErrorMessage}`);
+    }
+
     document.getElementById('shiftForm').addEventListener('submit', async event => {
       event.preventDefault();
 
       const employee = document.getElementById('employee').value.trim();
       const comment = document.getElementById('comment').value.trim();
+      const inspectorToken = document.getElementById('inspectorToken').value.trim();
       const file = photoInput.files[0];
+
+      let photoUrl = '';
       let stage = 'проверка формы';
 
       if (!employee) {
         alert('Введите ФИО сотрудника. Формат: Иванов Иван Петрович');
-        return;
-      }
-
-      if (!file) {
-        alert('Загрузите фото.');
         return;
       }
 
@@ -352,39 +527,30 @@
         return;
       }
 
+      if (!file && !inspectorToken) {
+        alert('Для открытия или закрытия смены сотрудником нужно сделать фото.');
+        return;
+      }
+
+      if (inspectorToken && !file && !comment) {
+        alert('Если проверяющий открывает или закрывает смену без фото, комментарий обязателен.');
+        return;
+      }
+
       setLoading(true);
 
       try {
-        stage = 'подготовка фото';
+        if (file) {
+          stage = 'подготовка фото';
 
-        const uploadFile = await compressImage(file);
+          const uploadFile = await compressImage(file);
 
-        stage = 'загрузка фото';
+          stage = `загрузка фото в Supabase, размер после сжатия ${formatBytes(uploadFile.size)}`;
 
-        const randomId = crypto.randomUUID();
-        const filePath = `shift_photos/${randomId}.jpg`;
-
-        const { error } = await supabaseClient
-          .storage
-          .from('work_photos')
-          .upload(filePath, uploadFile, {
-            cacheControl: '3600',
-            contentType: 'image/jpeg',
-            upsert: true
-          });
-
-        if (error) {
-          throw new Error(`Supabase: ${error.message}`);
+          photoUrl = await uploadPhotoToSupabase(uploadFile);
         }
 
-        const { data: publicUrlData } = supabaseClient
-          .storage
-          .from('work_photos')
-          .getPublicUrl(filePath);
-
-        const photoUrl = publicUrlData.publicUrl;
-
-        stage = 'отправка на сервер';
+        stage = 'отправка данных смены на сервер';
 
         const response = await fetch(BACKEND_URL, {
           method: 'POST',
@@ -398,7 +564,8 @@
             comment,
             photoUrl,
             action: selectedAction,
-            branch_id: branchId
+            branch_id: branchId,
+            inspector_token: inspectorToken
           })
         });
 
