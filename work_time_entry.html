@@ -235,17 +235,14 @@
     </form>
   </main>
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
   <script>
     const SUPABASE_URL = 'https://yhipguyfkwmszcxlpgvz.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_UOnF4Il-LMG_K-wOeYoysw_ISaQ9rjA';
     const BACKEND_URL = 'https://ekosfera.midera.fun/web/submit_shift';
+    const SUPABASE_BUCKET = 'work_photos';
 
     const urlParams = new URLSearchParams(window.location.search);
     const branchId = urlParams.get('branch_id') || '';
-
-    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     const photoInput = document.getElementById('photo');
     const fileName = document.getElementById('fileName');
@@ -434,23 +431,54 @@
       });
     }
 
-    async function uploadWithTimeout(filePath, uploadFile, timeoutMs) {
-      const uploadPromise = supabaseClient
-        .storage
-        .from('work_photos')
-        .upload(filePath, uploadFile, {
-          cacheControl: '3600',
-          contentType: 'image/jpeg',
-          upsert: true
+    async function fetchWithTimeout(url, options, timeoutMs) {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+      try {
+        return await fetch(url, {
+          ...options,
+          signal: controller.signal
         });
+      } finally {
+        clearTimeout(timeoutId);
+      }
+    }
 
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => {
-          reject(new Error('Превышено время ожидания загрузки фото. Проверьте интернет и попробуйте еще раз.'));
+    async function uploadWithTimeout(filePath, uploadFile, timeoutMs) {
+      const uploadUrl = `${SUPABASE_URL}/storage/v1/object/${SUPABASE_BUCKET}/${filePath}`;
+
+      let response;
+
+      try {
+        response = await fetchWithTimeout(uploadUrl, {
+          method: 'POST',
+          mode: 'cors',
+          cache: 'no-store',
+          headers: {
+            apikey: SUPABASE_KEY,
+            Authorization: `Bearer ${SUPABASE_KEY}`,
+            'Content-Type': 'image/jpeg',
+            'x-upsert': 'true',
+            'Cache-Control': '3600'
+          },
+          body: uploadFile
         }, timeoutMs);
-      });
+      } catch (error) {
+        if (error.name === 'AbortError') {
+          throw new Error('Превышено время ожидания загрузки фото. Проверьте интернет и попробуйте еще раз.');
+        }
 
-      return Promise.race([uploadPromise, timeoutPromise]);
+        throw new Error(`Сетевой сбой при загрузке фото: ${error.message}`);
+      }
+
+      const responseText = await response.text();
+
+      if (!response.ok) {
+        throw new Error(`Supabase HTTP ${response.status}: ${responseText.slice(0, 220) || 'пустой ответ'}`);
+      }
+
+      return true;
     }
 
     async function uploadPhotoToSupabase(uploadFile) {
@@ -460,23 +488,9 @@
 
       for (let attempt = 1; attempt <= 3; attempt += 1) {
         try {
-          const result = await uploadWithTimeout(filePath, uploadFile, 35000);
+          await uploadWithTimeout(filePath, uploadFile, 35000);
 
-          if (result && result.error) {
-            lastErrorMessage = result.error.message || 'Supabase вернул ошибку без текста.';
-            throw new Error(lastErrorMessage);
-          }
-
-          const { data: publicUrlData } = supabaseClient
-            .storage
-            .from('work_photos')
-            .getPublicUrl(filePath);
-
-          if (!publicUrlData || !publicUrlData.publicUrl) {
-            throw new Error('Supabase загрузил фото, но не вернул публичную ссылку.');
-          }
-
-          return publicUrlData.publicUrl;
+          return `${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_BUCKET}/${filePath}`;
         } catch (error) {
           lastErrorMessage = error.message || String(error);
 
@@ -494,6 +508,7 @@
         lowerMessage.includes('failed to fetch') ||
         lowerMessage.includes('network') ||
         lowerMessage.includes('timeout') ||
+        lowerMessage.includes('сетевой') ||
         lowerMessage.includes('превышено время')
       ) {
         throw new Error(
