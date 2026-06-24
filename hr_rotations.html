@@ -211,7 +211,7 @@
     .gantt-header,
     .gantt-row {
       display: grid;
-      grid-template-columns: minmax(210px, 1.1fr) minmax(155px, 0.78fr) minmax(330px, 1.55fr) minmax(125px, 0.62fr) minmax(190px, 0.9fr) minmax(125px, 0.6fr);
+      grid-template-columns: minmax(230px, 1.15fr) minmax(210px, 1fr) minmax(310px, 1.45fr) minmax(125px, 0.62fr) minmax(190px, 0.9fr) minmax(125px, 0.6fr);
       border-bottom: 1px solid #edf0e8;
     }
 
@@ -248,9 +248,54 @@
     }
 
     .employee-branch {
-      font-size: 14px;
-      font-weight: 800;
+      margin-top: 5px;
+      font-size: 13px;
+      font-weight: 400;
       color: #4f5966;
+    }
+
+    .rotation-comment {
+      width: 100%;
+    }
+
+    .rotation-comment textarea {
+      width: 100%;
+      min-height: 50px;
+      border: 1px solid #dfe5d8;
+      border-radius: 12px;
+      padding: 10px 11px;
+      font-size: 13px;
+      font-family: Arial, sans-serif;
+      resize: vertical;
+      background: #ffffff;
+      color: #20242a;
+    }
+
+    .rotation-comment textarea:focus {
+      border-color: #96c22c;
+      box-shadow: 0 0 0 3px rgba(150, 194, 44, 0.16);
+      outline: none;
+    }
+
+    .comment-save {
+      width: auto;
+      min-height: 34px;
+      margin-top: 8px;
+      padding: 7px 13px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .closed-comment {
+      font-size: 13px;
+      line-height: 1.35;
+      color: #3d4652;
+      white-space: pre-wrap;
+    }
+
+    .muted-comment {
+      color: #8b929b;
     }
 
     .timeline {
@@ -451,7 +496,7 @@
           <div class="gantt">
             <div class="gantt-header">
               <div class="gantt-cell">Сотрудник</div>
-              <div class="gantt-cell">Объект</div>
+              <div class="gantt-cell">Комментарий</div>
               <div class="gantt-cell">Период</div>
               <div class="gantt-cell">Дата начала</div>
               <div class="gantt-cell">Плановое окончание</div>
@@ -544,6 +589,15 @@
     function showMessage(type, text) {
       message.className = text ? `message ${type}` : 'message';
       message.textContent = text || '';
+    }
+
+    function escapeHtml(value) {
+      return String(value || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
     }
 
     function monthBounds(monthValue) {
@@ -659,11 +713,18 @@
         row.innerHTML = `
           <div class="gantt-cell employee">
             <div>
-              <div class="employee-name">${item.employee_name || '-'}</div>
+              <div class="employee-name">${escapeHtml(item.employee_name || '-')}</div>
+              <div class="employee-branch">${escapeHtml(item.branch_name || '-')}</div>
             </div>
           </div>
           <div class="gantt-cell">
-            <div class="employee-branch">${item.branch_name || '-'}</div>
+            ${item.raw_status === 'open'
+              ? `<div class="rotation-comment">
+                  <textarea data-comment-input="${item._id}" placeholder="Билеты, текущая работа, заметки HR">${escapeHtml(item.hr_comment || item.open_comment || '')}</textarea>
+                  <button type="button" class="comment-save" data-save-comment="${item._id}">Сохранить</button>
+                </div>`
+              : `<div class="closed-comment ${item.close_comment ? '' : 'muted-comment'}">${escapeHtml(item.close_comment || 'Комментарий не указан')}</div>`
+            }
           </div>
           <div class="timeline">
             <div class="bar ${statusClass(item)}" style="width:${barWidth};"></div>
@@ -689,6 +750,45 @@
           openCloseModal(item);
         });
       });
+
+      ganttBody.querySelectorAll('[data-save-comment]').forEach((button) => {
+        button.addEventListener('click', () => {
+          const input = ganttBody.querySelector(`[data-comment-input="${button.dataset.saveComment}"]`);
+          saveRotationComment(button.dataset.saveComment, input ? input.value : '', button);
+        });
+      });
+    }
+
+    async function saveRotationComment(rotationId, comment, saveButton) {
+      if (!rotationId) {
+        return;
+      }
+
+      saveButton.disabled = true;
+      saveButton.textContent = 'Сохранение...';
+
+      try {
+        const response = await fetch(`${API_BASE}/rotation/${rotationId}/comment`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            token,
+            comment: comment.trim()
+          })
+        });
+        const result = await response.json();
+
+        if (!result.success) {
+          throw new Error(result.message || 'Не удалось сохранить комментарий.');
+        }
+
+        showMessage('success', result.message || 'Комментарий сохранен.');
+      } catch (error) {
+        alert(error.message);
+      } finally {
+        saveButton.disabled = false;
+        saveButton.textContent = 'Сохранить';
+      }
     }
 
     async function login() {
