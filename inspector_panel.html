@@ -513,6 +513,17 @@
 
     async function correctShift(shiftId, hasStopTime) {
       const timeLabel = hasStopTime ? 'окончания' : 'начала';
+      const date = prompt(`Укажите фактическую дату ${timeLabel} смены в формате ДД.ММ.ГГГГ`);
+
+      if (date === null) {
+        return;
+      }
+
+      if (!/^\d{2}\.\d{2}\.\d{4}$/.test(date.trim())) {
+        alert('Введите дату в формате ДД.ММ.ГГГГ, например 01.07.2026.');
+        return;
+      }
+
       const time = prompt(`Укажите фактическое время ${timeLabel} смены в формате HH:MM`);
 
       if (time === null) {
@@ -536,6 +547,7 @@
       }
 
       const result = await sendShiftAction(shiftId, 'correct', {
+        date: date.trim(),
         time: time.trim(),
         comment: comment.trim()
       });
