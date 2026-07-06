@@ -512,8 +512,7 @@
     }
 
     async function correctShift(shiftId, hasStopTime) {
-      const timeLabel = hasStopTime ? 'окончания' : 'начала';
-      const date = prompt(`Укажите фактическую дату ${timeLabel} смены в формате ДД.ММ.ГГГГ`);
+      const date = prompt('Укажите фактическую дату смены в формате ДД.ММ.ГГГГ');
 
       if (date === null) {
         return;
@@ -524,7 +523,25 @@
         return;
       }
 
-      const time = prompt(`Укажите фактическое время ${timeLabel} смены в формате HH:MM`);
+      let startTime = '';
+      let time = '';
+
+      if (hasStopTime) {
+        startTime = prompt('Укажите фактическое время открытия смены в формате HH:MM');
+
+        if (startTime === null) {
+          return;
+        }
+
+        if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(startTime.trim())) {
+          alert('Введите время открытия в формате HH:MM, например 04:15.');
+          return;
+        }
+
+        time = prompt('Укажите фактическое время закрытия смены в формате HH:MM');
+      } else {
+        time = prompt('Укажите фактическое время открытия смены в формате HH:MM');
+      }
 
       if (time === null) {
         return;
@@ -546,11 +563,17 @@
         return;
       }
 
-      const result = await sendShiftAction(shiftId, 'correct', {
+      const payload = {
         date: date.trim(),
         time: time.trim(),
         comment: comment.trim()
-      });
+      };
+
+      if (hasStopTime) {
+        payload.start_time = startTime.trim();
+      }
+
+      const result = await sendShiftAction(shiftId, 'correct', payload);
 
       if (!result.success) {
         alert(result.message || 'Не удалось скорректировать смену.');
@@ -560,7 +583,6 @@
       alert(result.message);
       loadShifts();
     }
-
     function actionButtons(shift) {
       const buttons = [];
       const hasStopTime = Boolean(shift.stop_time);
