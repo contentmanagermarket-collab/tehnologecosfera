@@ -309,6 +309,107 @@
       color: #6a6a6a;
       background: #ffffff;
     }
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 1000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+      background: rgba(38, 45, 32, 0.48);
+    }
+
+    .modal-backdrop.open {
+      display: flex;
+    }
+
+    .modal-card {
+      width: min(560px, 100%);
+      max-height: calc(100vh - 36px);
+      overflow: auto;
+      padding: 24px;
+      border-radius: 22px;
+      background: #ffffff;
+      box-shadow: 0 24px 70px rgba(0, 0, 0, 0.2);
+    }
+
+    .modal-title {
+      margin: 0 0 8px;
+      font-size: 25px;
+      line-height: 1.2;
+      color: #2e2e2e;
+    }
+
+    .modal-subtitle {
+      margin-bottom: 18px;
+      font-size: 15px;
+      color: #6a6a6a;
+    }
+
+    .modal-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .modal-field {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+
+    .modal-field.full {
+      grid-column: 1 / -1;
+    }
+
+    .modal-field label {
+      font-size: 14px;
+      font-weight: 700;
+      color: #39495a;
+    }
+
+    .modal-field input,
+    .modal-field textarea {
+      width: 100%;
+      border: 1px solid #dfe5d8;
+      border-radius: 16px;
+      padding: 14px 15px;
+      font-family: Arial, sans-serif;
+      font-size: 17px;
+      outline: none;
+      background: #fbfff7;
+    }
+
+    .modal-field textarea {
+      min-height: 120px;
+      resize: vertical;
+    }
+
+    .modal-field input:focus,
+    .modal-field textarea:focus {
+      border-color: #96c22c;
+      box-shadow: 0 0 0 4px rgba(150, 194, 44, 0.18);
+      background: #ffffff;
+    }
+
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .modal-error {
+      display: none;
+      margin-top: 14px;
+      padding: 12px 14px;
+      border-radius: 14px;
+      color: #9d321f;
+      background: #fff3f0;
+      font-size: 14px;
+      line-height: 1.35;
+    }
 
     @media (max-width: 860px) {
       body { padding: 14px; }
@@ -383,6 +484,41 @@
     <section class="shift-list" id="shiftList"></section>
   </main>
 
+  <div class="modal-backdrop" id="correctModal" aria-hidden="true">
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="correctModalTitle">
+      <h2 class="modal-title" id="correctModalTitle">Корректировка смены</h2>
+      <div class="modal-subtitle" id="correctModalSubtitle">Укажите фактические данные смены.</div>
+
+      <div class="modal-grid">
+        <div class="modal-field full">
+          <label for="correctDate">Фактическая дата смены</label>
+          <input id="correctDate" type="text" inputmode="numeric" placeholder="01.07.2026" autocomplete="off" />
+        </div>
+
+        <div class="modal-field" id="correctStartTimeWrap">
+          <label for="correctStartTime">Время открытия</label>
+          <input id="correctStartTime" type="text" inputmode="numeric" placeholder="04:15" autocomplete="off" />
+        </div>
+
+        <div class="modal-field" id="correctStopTimeWrap">
+          <label for="correctStopTime">Время закрытия</label>
+          <input id="correctStopTime" type="text" inputmode="numeric" placeholder="16:00" autocomplete="off" />
+        </div>
+
+        <div class="modal-field full">
+          <label for="correctComment">Причина корректировки</label>
+          <textarea id="correctComment" placeholder="Например: сотрудник забыл закрыть смену"></textarea>
+        </div>
+      </div>
+
+      <div class="modal-error" id="correctModalError"></div>
+
+      <div class="modal-actions">
+        <button class="secondary" id="correctCancelButton" type="button">Отмена</button>
+        <button id="correctSaveButton" type="button">Сохранить</button>
+      </div>
+    </div>
+  </div>
   <script>
     const BACKEND_URL = 'https://ekosfera.midera.fun/web';
 
@@ -400,6 +536,17 @@
     const logoutButton = document.getElementById('logoutButton');
     const filterButtons = document.querySelectorAll('.filter-button');
     const employeeSearch = document.getElementById('employeeSearch');
+    const correctModal = document.getElementById('correctModal');
+    const correctModalSubtitle = document.getElementById('correctModalSubtitle');
+    const correctDate = document.getElementById('correctDate');
+    const correctStartTime = document.getElementById('correctStartTime');
+    const correctStopTime = document.getElementById('correctStopTime');
+    const correctStartTimeWrap = document.getElementById('correctStartTimeWrap');
+    const correctStopTimeWrap = document.getElementById('correctStopTimeWrap');
+    const correctComment = document.getElementById('correctComment');
+    const correctModalError = document.getElementById('correctModalError');
+    const correctCancelButton = document.getElementById('correctCancelButton');
+    const correctSaveButton = document.getElementById('correctSaveButton');
 
     const totalCount = document.getElementById('totalCount');
     const openCount = document.getElementById('openCount');
@@ -409,6 +556,7 @@
     let allShifts = [];
     let activeFilter = 'all';
     let searchQuery = '';
+    let pendingCorrection = null;
 
     function showMessage(text) {
       message.textContent = text;
@@ -511,77 +659,103 @@
       loadShifts();
     }
 
-    async function correctShift(shiftId, hasStopTime) {
-      const date = prompt('Укажите фактическую дату смены в формате ДД.ММ.ГГГГ');
+    function showCorrectError(text) {
+      correctModalError.textContent = text;
+      correctModalError.style.display = 'block';
+    }
 
-      if (date === null) {
+    function hideCorrectError() {
+      correctModalError.textContent = '';
+      correctModalError.style.display = 'none';
+    }
+
+    function closeCorrectModal() {
+      correctModal.classList.remove('open');
+      correctModal.setAttribute('aria-hidden', 'true');
+      pendingCorrection = null;
+      hideCorrectError();
+    }
+
+    function openCorrectModal(shiftId, hasStopTime) {
+      pendingCorrection = { shiftId, hasStopTime };
+      hideCorrectError();
+
+      correctDate.value = '';
+      correctStartTime.value = '';
+      correctStopTime.value = '';
+      correctComment.value = '';
+
+      correctStartTimeWrap.style.display = 'flex';
+      correctStopTimeWrap.style.display = hasStopTime ? 'flex' : 'none';
+      correctModalSubtitle.textContent = hasStopTime
+        ? 'Укажите фактическую дату, время открытия, время закрытия и причину корректировки.'
+        : 'Укажите фактическую дату, время открытия и причину корректировки.';
+
+      correctModal.classList.add('open');
+      correctModal.setAttribute('aria-hidden', 'false');
+      correctDate.focus();
+    }
+
+    async function submitCorrection() {
+      if (!pendingCorrection) {
         return;
       }
 
-      if (!/^\d{2}\.\d{2}\.\d{4}$/.test(date.trim())) {
-        alert('Введите дату в формате ДД.ММ.ГГГГ, например 01.07.2026.');
+      const date = correctDate.value.trim();
+      const startTime = correctStartTime.value.trim();
+      const stopTime = correctStopTime.value.trim();
+      const comment = correctComment.value.trim();
+
+      if (!/^\d{2}\.\d{2}\.\d{4}$/.test(date)) {
+        showCorrectError('Введите дату в формате ДД.ММ.ГГГГ, например 01.07.2026.');
         return;
       }
 
-      let startTime = '';
-      let time = '';
-
-      if (hasStopTime) {
-        startTime = prompt('Укажите фактическое время открытия смены в формате HH:MM');
-
-        if (startTime === null) {
-          return;
-        }
-
-        if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(startTime.trim())) {
-          alert('Введите время открытия в формате HH:MM, например 04:15.');
-          return;
-        }
-
-        time = prompt('Укажите фактическое время закрытия смены в формате HH:MM');
-      } else {
-        time = prompt('Укажите фактическое время открытия смены в формате HH:MM');
-      }
-
-      if (time === null) {
+      if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(startTime)) {
+        showCorrectError('Введите время открытия в формате HH:MM, например 04:15.');
         return;
       }
 
-      if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(time.trim())) {
-        alert('Введите время в формате HH:MM, например 18:30.');
+      if (pendingCorrection.hasStopTime && !/^([01]\d|2[0-3]):[0-5]\d$/.test(stopTime)) {
+        showCorrectError('Введите время закрытия в формате HH:MM, например 16:00.');
         return;
       }
 
-      const comment = prompt('Укажите причину корректировки:');
-
-      if (comment === null) {
+      if (!comment) {
+        showCorrectError('Причина корректировки обязательна.');
         return;
       }
 
-      if (!comment.trim()) {
-        alert('Причина корректировки обязательна.');
-        return;
-      }
+      correctSaveButton.disabled = true;
+      correctSaveButton.textContent = 'Сохранение...';
 
       const payload = {
-        date: date.trim(),
-        time: time.trim(),
-        comment: comment.trim()
+        date,
+        time: pendingCorrection.hasStopTime ? stopTime : startTime,
+        comment
       };
 
-      if (hasStopTime) {
-        payload.start_time = startTime.trim();
+      if (pendingCorrection.hasStopTime) {
+        payload.start_time = startTime;
       }
 
-      const result = await sendShiftAction(shiftId, 'correct', payload);
+      const result = await sendShiftAction(pendingCorrection.shiftId, 'correct', payload);
+
+      correctSaveButton.disabled = false;
+      correctSaveButton.textContent = 'Сохранить';
 
       if (!result.success) {
-        alert(result.message || 'Не удалось скорректировать смену.');
+        showCorrectError(result.message || 'Не удалось скорректировать смену.');
         return;
       }
 
+      closeCorrectModal();
       alert(result.message);
       loadShifts();
+    }
+
+    async function correctShift(shiftId, hasStopTime) {
+      openCorrectModal(shiftId, hasStopTime);
     }
     function actionButtons(shift) {
       const buttons = [];
@@ -769,6 +943,21 @@
 
     timesheetButton.addEventListener('click', () => {
       window.location.href = `admin_timesheet.html?token=${encodeURIComponent(token)}`;
+    });
+
+    correctCancelButton.addEventListener('click', closeCorrectModal);
+    correctSaveButton.addEventListener('click', submitCorrection);
+
+    correctModal.addEventListener('click', event => {
+      if (event.target === correctModal) {
+        closeCorrectModal();
+      }
+    });
+
+    document.addEventListener('keydown', event => {
+      if (event.key === 'Escape' && correctModal.classList.contains('open')) {
+        closeCorrectModal();
+      }
     });
 
     loadShifts();
