@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HR заявки - Приведи друга</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Arial, sans-serif;
+      background: #f4f6f2;
+      color: #20242a;
+      padding: 28px;
+    }
+    .page {
+      width: 100%;
+      max-width: 1500px;
+      margin: 0 auto;
+    }
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+      margin-bottom: 24px;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 22px;
+    }
+    .logo {
+      width: 190px;
+      max-width: 38vw;
+    }
+    h1 {
+      margin: 0;
+      font-size: 34px;
+      line-height: 1.1;
+    }
+    .meta {
+      margin: 7px 0 0;
+      color: #5f6670;
+      font-size: 18px;
+    }
+    .actions {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+    button {
+      border: 0;
+      border-radius: 16px;
+      padding: 15px 22px;
+      background: #94c91f;
+      color: #fff;
+      font-size: 17px;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    button.secondary { background: #6b6b6b; }
+    button.light {
+      background: #fff;
+      color: #20242a;
+      border: 1px solid #dfe5d8;
+    }
+    button.active { background: #94c91f; color: #fff; }
+    button.status-in-work { background: #5f8291; }
+    button.status-hired { background: #94c91f; }
+    button.status-not-fit { background: #c84b38; }
+    button.status-duplicate { background: #777; }
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 16px;
+      margin-bottom: 22px;
+    }
+    .stat {
+      background: #fff;
+      border-radius: 22px;
+      padding: 24px;
+      box-shadow: 0 18px 45px rgba(32, 36, 42, 0.06);
+    }
+    .stat strong {
+      display: block;
+      font-size: 32px;
+      margin-bottom: 6px;
+    }
+    .filters {
+      display: grid;
+      grid-template-columns: 1.1fr 1.4fr 1fr auto;
+      gap: 14px;
+      background: #fff;
+      border-radius: 22px;
+      padding: 18px;
+      box-shadow: 0 18px 45px rgba(32, 36, 42, 0.06);
+      margin-bottom: 18px;
+    }
+    label {
+      display: block;
+      margin: 0 0 8px;
+      font-size: 14px;
+      font-weight: 700;
+      color: #4b5563;
+    }
+    select, input, textarea {
+      width: 100%;
+      min-height: 52px;
+      border: 1px solid #dfe5d8;
+      border-radius: 14px;
+      padding: 13px 15px;
+      font-size: 16px;
+      font-family: Arial, sans-serif;
+      background: #fff;
+      outline: none;
+    }
+    .tabs {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 18px;
+    }
+    .list {
+      display: grid;
+      gap: 14px;
+    }
+    .card {
+      background: #fff;
+      border-radius: 22px;
+      padding: 22px;
+      box-shadow: 0 18px 45px rgba(32, 36, 42, 0.06);
+    }
+    .card-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+    .names {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+    .field {
+      background: #f7faf4;
+      border-radius: 16px;
+      padding: 14px;
+      min-height: 72px;
+    }
+    .field span {
+      display: block;
+      color: #5f6670;
+      font-size: 13px;
+      margin-bottom: 6px;
+      font-weight: 700;
+    }
+    .field b {
+      font-size: 18px;
+      line-height: 1.25;
+    }
+    .status {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 40px;
+      border-radius: 999px;
+      padding: 8px 14px;
+      background: #edf6d7;
+      color: #36520b;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .status.in_work { background: #e6f0f4; color: #31586a; }
+    .status.hired { background: #e5f5ca; color: #36520b; }
+    .status.not_fit { background: #fff0ed; color: #b42318; }
+    .status.duplicate { background: #eef0f2; color: #4b5563; }
+    .comment {
+      margin-top: 12px;
+      color: #20242a;
+      line-height: 1.45;
+    }
+    .card-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 16px;
+    }
+    .empty, .error {
+      background: #fff;
+      border-radius: 22px;
+      padding: 28px;
+      text-align: center;
+      color: #5f6670;
+      font-size: 18px;
+    }
+    .error {
+      color: #b42318;
+      background: #fff0ed;
+    }
+    .modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 20;
+      background: rgba(0, 0, 0, 0.35);
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .modal-card {
+      width: 100%;
+      max-width: 520px;
+      background: #fff;
+      border-radius: 22px;
+      padding: 24px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+    }
+    .modal-card h2 {
+      margin: 0 0 14px;
+      font-size: 24px;
+    }
+    .modal-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 16px;
+    }
+    .modal-actions button { flex: 1; }
+    @media (max-width: 900px) {
+      body { padding: 18px; }
+      .topbar, .brand { align-items: flex-start; flex-direction: column; }
+      .actions { justify-content: flex-start; }
+      .stats { grid-template-columns: 1fr 1fr; }
+      .filters { grid-template-columns: 1fr; }
+      .names { grid-template-columns: 1fr; }
+      h1 { font-size: 28px; }
+    }
+    @media (max-width: 520px) {
+      body { padding: 0; }
+      .page { padding: 18px; }
+      .stats { grid-template-columns: 1fr; }
+      button { width: 100%; }
+      .modal-actions { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <div class="topbar">
+      <div class="brand">
+        <img class="logo" src="logo.png" alt="Экосфера" />
+        <div>
+          <h1>Приведи друга</h1>
+          <p class="meta" id="hrMeta">Загрузка...</p>
+        </div>
+      </div>
+      <div class="actions">
+        <button id="refreshButton" type="button">Обновить</button>
+        <button id="logoutButton" type="button" class="secondary">Выйти</button>
+      </div>
+    </div>
+
+    <section class="stats">
+      <div class="stat"><strong id="statAll">0</strong><span>Всего</span></div>
+      <div class="stat"><strong id="statNew">0</strong><span>Новые</span></div>
+      <div class="stat"><strong id="statWork">0</strong><span>В работе</span></div>
+      <div class="stat"><strong id="statHired">0</strong><span>Трудоустроены</span></div>
+      <div class="stat"><strong id="statClosed">0</strong><span>Не подошел / дубль</span></div>
+    </section>
+
+    <section class="filters">
+      <div>
+        <label for="branchFilter">Объект</label>
+        <select id="branchFilter">
+          <option value="">Все объекты</option>
+        </select>
+      </div>
+      <div>
+        <label for="searchInput">Поиск</label>
+        <input id="searchInput" type="text" placeholder="ФИО сотрудника, кандидата, телефон или объект" />
+      </div>
+      <div>
+        <label for="statusFilter">Статус</label>
+        <select id="statusFilter">
+          <option value="">Все статусы</option>
+          <option value="new">Новая заявка</option>
+          <option value="in_work">Контакт взят в работу</option>
+          <option value="hired">Трудоустроен</option>
+          <option value="not_fit">Не подошел</option>
+          <option value="duplicate">Дубль</option>
+        </select>
+      </div>
+      <div style="display:flex;align-items:end;">
+        <button id="showButton" type="button">Показать</button>
+      </div>
+    </section>
+
+    <div class="tabs">
+      <button class="light active" type="button" data-status="">Все</button>
+      <button class="light" type="button" data-status="new">Новые</button>
+      <button class="light" type="button" data-status="in_work">В работе</button>
+      <button class="light" type="button" data-status="hired">Трудоустроены</button>
+      <button class="light" type="button" data-status="not_fit">Не подошел</button>
+      <button class="light" type="button" data-status="duplicate">Дубли</button>
+    </div>
+
+    <section id="list" class="list"></section>
+  </main>
+
+  <div id="statusModal" class="modal">
+    <div class="modal-card">
+      <h2 id="modalTitle">Изменить статус</h2>
+      <label for="hrComment">Комментарий HR</label>
+      <textarea id="hrComment" placeholder="Можно оставить пустым"></textarea>
+      <div class="modal-actions">
+        <button id="cancelModalButton" type="button" class="secondary">Отмена</button>
+        <button id="saveStatusButton" type="button">Сохранить</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = 'https://ekosfera.midera.fun/web';
+    const params = new URLSearchParams(window.location.search);
+    let token = params.get('token') || localStorage.getItem('eko_referral_hr_token') || '';
+    let currentStatus = '';
+    let currentReferralId = '';
+
+    const hrMeta = document.getElementById('hrMeta');
+    const branchFilter = document.getElementById('branchFilter');
+    const statusFilter = document.getElementById('statusFilter');
+    const searchInput = document.getElementById('searchInput');
+    const list = document.getElementById('list');
+    const statusModal = document.getElementById('statusModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const hrComment = document.getElementById('hrComment');
+
+    const statusLabels = {
+      new: 'Новая заявка',
+      in_work: 'Контакт взят в работу',
+      hired: 'Трудоустроен',
+      not_fit: 'Не подошел',
+      duplicate: 'Дубль'
+    };
+
+    function escapeHtml(value) {
+      return String(value || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function statusClass(status) {
+      if (status === 'in_work') return 'in_work';
+      if (status === 'hired') return 'hired';
+      if (status === 'not_fit') return 'not_fit';
+      if (status === 'duplicate') return 'duplicate';
+      return '';
+    }
+
+    function setStats(totals) {
+      document.getElementById('statAll').textContent = totals.all || 0;
+      document.getElementById('statNew').textContent = totals.new || 0;
+      document.getElementById('statWork').textContent = totals.in_work || 0;
+      document.getElementById('statHired').textContent = totals.hired || 0;
+      document.getElementById('statClosed').textContent = (totals.not_fit || 0) + (totals.duplicate || 0);
+    }
+
+    function renderItems(items) {
+      list.innerHTML = '';
+
+      if (!items.length) {
+        list.innerHTML = '<div class="empty">Заявок сейчас нет.</div>';
+        return;
+      }
+
+      items.forEach((item) => {
+        const card = document.createElement('article');
+        card.className = 'card';
+        card.innerHTML = `
+          <div class="card-head">
+            <div>
+              <h2 style="margin:0 0 6px;font-size:24px;">${escapeHtml(item.friend_name)}</h2>
+              <div style="color:#5f6670;font-size:16px;">${escapeHtml(item.branch_name)} · ${escapeHtml(item.recommendation_date)}</div>
+            </div>
+            <div class="status ${statusClass(item.status)}">${escapeHtml(item.status_label)}</div>
+          </div>
+          <div class="names">
+            <div class="field">
+              <span>Кто рекомендовал</span>
+              <b>${escapeHtml(item.employee_name)}</b>
+              <div>${escapeHtml(item.employee_phone || 'телефон не указан')}</div>
+            </div>
+            <div class="field">
+              <span>Кандидат</span>
+              <b>${escapeHtml(item.friend_name)}</b>
+              <div>${escapeHtml(item.friend_phone)}</div>
+            </div>
+          </div>
+          <div class="comment"><b>Комментарий сотрудника:</b> ${escapeHtml(item.comment || 'не указан')}</div>
+          <div class="comment"><b>Комментарий HR:</b> ${escapeHtml(item.hr_comment || 'не указан')}</div>
+          <div class="card-actions">
+            <button class="status-in-work" type="button" data-id="${escapeHtml(item._id)}" data-status="in_work">Контакт взят в работу</button>
+            <button class="status-hired" type="button" data-id="${escapeHtml(item._id)}" data-status="hired">Трудоустроен</button>
+            <button class="status-not-fit" type="button" data-id="${escapeHtml(item._id)}" data-status="not_fit">Не подошел</button>
+            <button class="status-duplicate" type="button" data-id="${escapeHtml(item._id)}" data-status="duplicate">Дубль</button>
+          </div>
+        `;
+        list.appendChild(card);
+      });
+    }
+
+    async function login() {
+      if (!token) {
+        window.location.href = 'referral_hr_login.html';
+        return false;
+      }
+
+      try {
+        const response = await fetch(`${API_BASE}/referral/hr/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token })
+        });
+        const result = await response.json();
+
+        if (!result.success) {
+          localStorage.removeItem('eko_referral_hr_token');
+          window.location.href = 'referral_hr_login.html';
+          return false;
+        }
+
+        localStorage.setItem('eko_referral_hr_token', token);
+        hrMeta.textContent = `${result.hr.name || 'HR'} · объектов: ${result.branches.length}`;
+
+        branchFilter.innerHTML = '<option value="">Все объекты</option>';
+        result.branches.forEach((branch) => {
+          const option = document.createElement('option');
+          option.value = branch._id;
+          option.textContent = branch.name;
+          branchFilter.appendChild(option);
+        });
+
+        return true;
+      } catch (error) {
+        list.innerHTML = '<div class="error">Не удалось войти. Проверьте интернет.</div>';
+        return false;
+      }
+    }
+
+    async function loadItems() {
+      list.innerHTML = '<div class="empty">Загрузка...</div>';
+
+      const url = new URL(`${API_BASE}/referral/hr/list`);
+      url.searchParams.set('token', token);
+      if (statusFilter.value) url.searchParams.set('status', statusFilter.value);
+      if (branchFilter.value) url.searchParams.set('branch_id', branchFilter.value);
+      if (searchInput.value.trim()) url.searchParams.set('search', searchInput.value.trim());
+
+      try {
+        const response = await fetch(url.toString());
+        const result = await response.json();
+
+        if (!result.success) {
+          list.innerHTML = `<div class="error">${escapeHtml(result.message || 'Ошибка загрузки.')}</div>`;
+          return;
+        }
+
+        setStats(result.totals || {});
+        renderItems(result.items || []);
+      } catch (error) {
+        list.innerHTML = '<div class="error">Не удалось загрузить заявки.</div>';
+      }
+    }
+
+    function openStatusModal(id, status) {
+      currentReferralId = id;
+      currentStatus = status;
+      modalTitle.textContent = statusLabels[status] || 'Изменить статус';
+      hrComment.value = '';
+      statusModal.style.display = 'flex';
+    }
+
+    async function saveStatus() {
+      if (!currentReferralId || !currentStatus) return;
+
+      try {
+        const response = await fetch(`${API_BASE}/referral/hr/${currentReferralId}/status`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            token,
+            status: currentStatus,
+            hr_comment: hrComment.value.trim()
+          })
+        });
+        const result = await response.json();
+
+        if (!result.success) {
+          alert(result.message || 'Не удалось обновить статус.');
+          return;
+        }
+
+        statusModal.style.display = 'none';
+        await loadItems();
+      } catch (error) {
+        alert('Ошибка сохранения. Проверьте интернет.');
+      }
+    }
+
+    document.getElementById('refreshButton').addEventListener('click', loadItems);
+    document.getElementById('showButton').addEventListener('click', loadItems);
+    document.getElementById('logoutButton').addEventListener('click', () => {
+      localStorage.removeItem('eko_referral_hr_token');
+      window.location.href = 'referral_hr_login.html';
+    });
+    document.getElementById('cancelModalButton').addEventListener('click', () => {
+      statusModal.style.display = 'none';
+    });
+    document.getElementById('saveStatusButton').addEventListener('click', saveStatus);
+
+    document.querySelectorAll('.tabs button').forEach((button) => {
+      button.addEventListener('click', () => {
+        document.querySelectorAll('.tabs button').forEach((item) => item.classList.remove('active'));
+        button.classList.add('active');
+        statusFilter.value = button.dataset.status || '';
+        loadItems();
+      });
+    });
+
+    list.addEventListener('click', (event) => {
+      const button = event.target.closest('button[data-id][data-status]');
+      if (!button) return;
+      openStatusModal(button.dataset.id, button.dataset.status);
+    });
+
+    searchInput.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') loadItems();
+    });
+
+    (async function init() {
+      const ok = await login();
+      if (ok) await loadItems();
+    })();
+  </script>
+</body>
+</html>
