@@ -373,6 +373,14 @@
       document.getElementById('statClosed').textContent = (totals.not_fit || 0) + (totals.duplicate || 0);
     }
 
+    function syncActiveStatusTab() {
+      const selectedStatus = statusFilter.value || '';
+
+      document.querySelectorAll('.tabs button').forEach((button) => {
+        button.classList.toggle('active', (button.dataset.status || '') === selectedStatus);
+      });
+    }
+
     function renderItems(items) {
       list.innerHTML = '';
 
@@ -516,7 +524,10 @@
     }
 
     document.getElementById('refreshButton').addEventListener('click', loadItems);
-    document.getElementById('showButton').addEventListener('click', loadItems);
+    document.getElementById('showButton').addEventListener('click', () => {
+      syncActiveStatusTab();
+      loadItems();
+    });
     document.getElementById('logoutButton').addEventListener('click', () => {
       localStorage.removeItem('eko_referral_hr_token');
       window.location.href = 'referral_hr_login.html';
@@ -534,6 +545,8 @@
         loadItems();
       });
     });
+
+    statusFilter.addEventListener('change', syncActiveStatusTab);
 
     list.addEventListener('click', (event) => {
       const button = event.target.closest('button[data-id][data-status]');
