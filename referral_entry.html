@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Приведи друга</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Arial, sans-serif;
+      background: #f4f6f2;
+      color: #20242a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 22px;
+    }
+    .card {
+      width: 100%;
+      max-width: 620px;
+      background: #fff;
+      border-radius: 24px;
+      padding: 30px;
+      box-shadow: 0 18px 45px rgba(32, 36, 42, 0.08);
+    }
+    .logo {
+      display: block;
+      width: 240px;
+      max-width: 80%;
+      margin: 0 auto 20px;
+    }
+    h1 {
+      margin: 0;
+      text-align: center;
+      font-size: 30px;
+      line-height: 1.15;
+      color: #20242a;
+      text-transform: uppercase;
+    }
+    .subtitle {
+      margin: 10px 0 24px;
+      text-align: center;
+      color: #5f6670;
+      font-size: 17px;
+    }
+    .promo {
+      margin: 0 0 22px;
+      padding: 16px;
+      border-radius: 16px;
+      background: #f3f9e8;
+      border: 1px solid #dcecc0;
+      color: #35530b;
+      font-size: 15px;
+      line-height: 1.45;
+    }
+    label {
+      display: block;
+      margin: 16px 0 8px;
+      font-size: 15px;
+      font-weight: 700;
+      color: #3d4652;
+    }
+    input, select, textarea {
+      width: 100%;
+      min-height: 54px;
+      border: 1px solid #dfe5d8;
+      border-radius: 14px;
+      padding: 14px 16px;
+      font-size: 17px;
+      font-family: Arial, sans-serif;
+      background: #fff;
+      color: #20242a;
+      outline: none;
+    }
+    textarea {
+      min-height: 108px;
+      resize: vertical;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    .agreement {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      margin: 20px 0 0;
+      color: #3d4652;
+      font-size: 15px;
+      line-height: 1.35;
+    }
+    .agreement input {
+      width: 22px;
+      min-width: 22px;
+      height: 22px;
+      min-height: 22px;
+      margin-top: 0;
+      accent-color: #94c91f;
+    }
+    .agreement a {
+      color: #5d790f;
+      font-weight: 700;
+    }
+    button {
+      width: 100%;
+      min-height: 62px;
+      border: 0;
+      border-radius: 16px;
+      margin-top: 22px;
+      background: #94c91f;
+      color: #fff;
+      font-size: 21px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    button:disabled {
+      background: #8b8f95;
+      cursor: wait;
+    }
+    .message {
+      display: none;
+      margin-top: 16px;
+      padding: 14px;
+      border-radius: 14px;
+      font-size: 16px;
+      line-height: 1.35;
+    }
+    .message.ok {
+      display: block;
+      background: #eef8dc;
+      color: #35530b;
+      border: 1px solid #dcecc0;
+    }
+    .message.error {
+      display: block;
+      background: #fff0ed;
+      color: #b42318;
+      border: 1px solid #ffd5cf;
+    }
+    @media (max-width: 620px) {
+      body { padding: 0; align-items: stretch; }
+      .card { border-radius: 0; min-height: 100vh; padding: 24px 20px; }
+      h1 { font-size: 26px; }
+      .grid { grid-template-columns: 1fr; gap: 0; }
+    }
+  </style>
+</head>
+<body>
+  <main class="card">
+    <img class="logo" src="logo.png" alt="Экосфера" />
+    <h1>Приведи друга</h1>
+    <div class="subtitle">Заполните рекомендацию кандидата</div>
+
+    <div class="promo">
+      Если вы рекомендуете знакомого для работы в Экосфере, заполните форму. HR получит заявку и свяжется с кандидатом.
+    </div>
+
+    <form id="referralForm">
+      <label for="employeeName">Ваше ФИО</label>
+      <input id="employeeName" type="text" placeholder="Введите ФИО полностью" autocomplete="name" required />
+
+      <label for="employeePhone">Ваш телефон</label>
+      <input id="employeePhone" type="tel" placeholder="+7..." autocomplete="tel" />
+
+      <label for="branchSelect">Объект</label>
+      <select id="branchSelect" required>
+        <option value="">Выберите объект</option>
+      </select>
+
+      <label for="friendName">ФИО кандидата</label>
+      <input id="friendName" type="text" placeholder="Кого вы рекомендуете" required />
+
+      <div class="grid">
+        <div>
+          <label for="friendPhone">Телефон кандидата</label>
+          <input id="friendPhone" type="tel" placeholder="+7..." required />
+        </div>
+        <div>
+          <label for="recommendationDate">Дата рекомендации</label>
+          <input id="recommendationDate" type="date" required />
+        </div>
+      </div>
+
+      <label for="comment">Комментарий</label>
+      <textarea id="comment" placeholder="Например: должность, опыт, удобное время связи"></textarea>
+
+      <label class="agreement">
+        <input id="agreement" type="checkbox" />
+        <span>
+          Согласен с
+          <a href="./Согласие на обработку персональных данных.docx" target="_blank" rel="noopener">политикой обработки данных</a>
+        </span>
+      </label>
+
+      <button id="submitButton" type="submit">Отправить рекомендацию</button>
+      <div id="message" class="message"></div>
+    </form>
+  </main>
+
+  <script>
+    const API_BASE = 'https://ekosfera.midera.fun/web';
+    const params = new URLSearchParams(window.location.search);
+    const initialBranchId = params.get('branch_id') || '';
+
+    const form = document.getElementById('referralForm');
+    const branchSelect = document.getElementById('branchSelect');
+    const submitButton = document.getElementById('submitButton');
+    const message = document.getElementById('message');
+    const recommendationDate = document.getElementById('recommendationDate');
+
+    recommendationDate.value = new Date().toISOString().slice(0, 10);
+
+    function showMessage(text, type) {
+      message.textContent = text;
+      message.className = `message ${type}`;
+    }
+
+    async function loadBranches() {
+      try {
+        const response = await fetch(`${API_BASE}/referral/branches`);
+        const result = await response.json();
+
+        if (!result.success) {
+          showMessage(result.message || 'Не удалось загрузить объекты.', 'error');
+          return;
+        }
+
+        result.branches.forEach((branch) => {
+          const option = document.createElement('option');
+          option.value = branch._id;
+          option.textContent = branch.name;
+          branchSelect.appendChild(option);
+        });
+
+        if (initialBranchId) {
+          branchSelect.value = initialBranchId;
+        }
+      } catch (error) {
+        showMessage('Не удалось загрузить список объектов. Проверьте интернет.', 'error');
+      }
+    }
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      message.className = 'message';
+
+      if (!document.getElementById('agreement').checked) {
+        showMessage('Поставьте галочку согласия с обработкой данных.', 'error');
+        return;
+      }
+
+      submitButton.disabled = true;
+      submitButton.textContent = 'Отправка...';
+
+      try {
+        const payload = {
+          employee_name: document.getElementById('employeeName').value.trim(),
+          employee_phone: document.getElementById('employeePhone').value.trim(),
+          branch_id: branchSelect.value,
+          friend_name: document.getElementById('friendName').value.trim(),
+          friend_phone: document.getElementById('friendPhone').value.trim(),
+          recommendation_date: recommendationDate.value,
+          comment: document.getElementById('comment').value.trim(),
+          personal_data_agreement: true
+        };
+
+        const response = await fetch(`${API_BASE}/referral/submit`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        const result = await response.json();
+
+        if (!result.success) {
+          showMessage(result.message || 'Не удалось отправить рекомендацию.', 'error');
+          return;
+        }
+
+        form.reset();
+        recommendationDate.value = new Date().toISOString().slice(0, 10);
+        if (initialBranchId) branchSelect.value = initialBranchId;
+        showMessage(result.message || 'Рекомендация отправлена.', 'ok');
+      } catch (error) {
+        showMessage('Ошибка отправки. Проверьте интернет и попробуйте еще раз.', 'error');
+      } finally {
+        submitButton.disabled = false;
+        submitButton.textContent = 'Отправить рекомендацию';
+      }
+    });
+
+    loadBranches();
+  </script>
+</body>
+</html>
