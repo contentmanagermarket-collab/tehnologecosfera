@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HR вход - Приведи друга</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Arial, sans-serif;
+      background: #f4f6f2;
+      color: #20242a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .card {
+      width: 100%;
+      max-width: 460px;
+      background: #fff;
+      border-radius: 24px;
+      padding: 32px;
+      box-shadow: 0 18px 45px rgba(32, 36, 42, 0.08);
+    }
+    .logo {
+      display: block;
+      width: 230px;
+      max-width: 82%;
+      margin: 0 auto 24px;
+    }
+    h1 {
+      margin: 0;
+      text-align: center;
+      font-size: 28px;
+      line-height: 1.15;
+    }
+    p {
+      margin: 10px 0 24px;
+      text-align: center;
+      color: #5f6670;
+      font-size: 16px;
+    }
+    label {
+      display: block;
+      margin: 0 0 8px;
+      font-size: 15px;
+      font-weight: 700;
+      color: #3d4652;
+    }
+    input {
+      width: 100%;
+      min-height: 54px;
+      border: 1px solid #dfe5d8;
+      border-radius: 14px;
+      padding: 14px 16px;
+      font-size: 17px;
+      outline: none;
+    }
+    button {
+      width: 100%;
+      min-height: 58px;
+      border: 0;
+      border-radius: 16px;
+      margin-top: 18px;
+      background: #94c91f;
+      color: #fff;
+      font-size: 20px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .error {
+      display: none;
+      margin-top: 14px;
+      padding: 13px;
+      border-radius: 14px;
+      background: #fff0ed;
+      color: #b42318;
+      border: 1px solid #ffd5cf;
+    }
+  </style>
+</head>
+<body>
+  <main class="card">
+    <img class="logo" src="logo.png" alt="Экосфера" />
+    <h1>HR - Приведи друга</h1>
+    <p>Введите токен для просмотра рекомендаций</p>
+
+    <label for="tokenInput">Токен HR</label>
+    <input id="tokenInput" type="password" placeholder="Введите токен" />
+    <button id="loginButton" type="button">Войти</button>
+    <div id="errorBox" class="error"></div>
+  </main>
+
+  <script>
+    const API_BASE = 'https://ekosfera.midera.fun/web';
+    const tokenInput = document.getElementById('tokenInput');
+    const loginButton = document.getElementById('loginButton');
+    const errorBox = document.getElementById('errorBox');
+
+    async function login() {
+      const token = tokenInput.value.trim();
+      errorBox.style.display = 'none';
+
+      if (!token) {
+        errorBox.textContent = 'Введите токен.';
+        errorBox.style.display = 'block';
+        return;
+      }
+
+      loginButton.disabled = true;
+      loginButton.textContent = 'Проверка...';
+
+      try {
+        const response = await fetch(`${API_BASE}/referral/hr/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token })
+        });
+        const result = await response.json();
+
+        if (!result.success) {
+          errorBox.textContent = result.message || 'Доступ запрещен.';
+          errorBox.style.display = 'block';
+          return;
+        }
+
+        localStorage.setItem('eko_referral_hr_token', token);
+        window.location.href = `referral_hr_panel.html?token=${encodeURIComponent(token)}`;
+      } catch (error) {
+        errorBox.textContent = 'Ошибка входа. Проверьте интернет.';
+        errorBox.style.display = 'block';
+      } finally {
+        loginButton.disabled = false;
+        loginButton.textContent = 'Войти';
+      }
+    }
+
+    tokenInput.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') login();
+    });
+    loginButton.addEventListener('click', login);
+  </script>
+</body>
+</html>
