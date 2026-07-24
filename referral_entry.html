@@ -195,6 +195,14 @@
         </span>
       </label>
 
+      <label class="agreement">
+        <input id="rulesAgreement" type="checkbox" />
+        <span>
+          Отправляя форму, я подтверждаю, что ознакомлен(а) и согласен(а) с
+          <a href="./Правила акции Приведи друга.docx" target="_blank" rel="noopener">правилами акции «Приведи друга»</a>.
+        </span>
+      </label>
+
       <button id="submitButton" type="submit">Отправить рекомендацию</button>
       <div id="message" class="message"></div>
     </form>
@@ -252,6 +260,11 @@
         return;
       }
 
+      if (!document.getElementById('rulesAgreement').checked) {
+        showMessage('Поставьте галочку согласия с правилами акции «Приведи друга».', 'error');
+        return;
+      }
+
       submitButton.disabled = true;
       submitButton.textContent = 'Отправка...';
 
@@ -264,7 +277,8 @@
           friend_phone: document.getElementById('friendPhone').value.trim(),
           recommendation_date: recommendationDate.value,
           comment: document.getElementById('comment').value.trim(),
-          personal_data_agreement: true
+          personal_data_agreement: true,
+          rules_agreement: true
         };
 
         const response = await fetch(`${API_BASE}/referral/submit`, {
