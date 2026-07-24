@@ -165,10 +165,8 @@
       <label for="employeePhone">Ваш телефон</label>
       <input id="employeePhone" type="tel" placeholder="+7..." autocomplete="tel" />
 
-      <label for="branchSelect">Объект</label>
-      <select id="branchSelect" required>
-        <option value="">Выберите объект</option>
-      </select>
+      <label for="regionInput">Регион местонахождения рекомендуемого</label>
+      <input id="regionInput" type="text" placeholder="Например: Самара, Сабетта, Хабаровск" required />
 
       <label for="friendName">ФИО кандидата</label>
       <input id="friendName" type="text" placeholder="Кого вы рекомендуете" required />
@@ -210,11 +208,8 @@
 
   <script>
     const API_BASE = 'https://ekosfera.midera.fun/web';
-    const params = new URLSearchParams(window.location.search);
-    const initialBranchId = params.get('branch_id') || '';
 
     const form = document.getElementById('referralForm');
-    const branchSelect = document.getElementById('branchSelect');
     const submitButton = document.getElementById('submitButton');
     const message = document.getElementById('message');
     const recommendationDate = document.getElementById('recommendationDate');
@@ -224,31 +219,6 @@
     function showMessage(text, type) {
       message.textContent = text;
       message.className = `message ${type}`;
-    }
-
-    async function loadBranches() {
-      try {
-        const response = await fetch(`${API_BASE}/referral/branches`);
-        const result = await response.json();
-
-        if (!result.success) {
-          showMessage(result.message || 'Не удалось загрузить объекты.', 'error');
-          return;
-        }
-
-        result.branches.forEach((branch) => {
-          const option = document.createElement('option');
-          option.value = branch._id;
-          option.textContent = branch.name;
-          branchSelect.appendChild(option);
-        });
-
-        if (initialBranchId) {
-          branchSelect.value = initialBranchId;
-        }
-      } catch (error) {
-        showMessage('Не удалось загрузить список объектов. Проверьте интернет.', 'error');
-      }
     }
 
     form.addEventListener('submit', async (event) => {
@@ -272,7 +242,7 @@
         const payload = {
           employee_name: document.getElementById('employeeName').value.trim(),
           employee_phone: document.getElementById('employeePhone').value.trim(),
-          branch_id: branchSelect.value,
+          region: document.getElementById('regionInput').value.trim(),
           friend_name: document.getElementById('friendName').value.trim(),
           friend_phone: document.getElementById('friendPhone').value.trim(),
           recommendation_date: recommendationDate.value,
@@ -296,7 +266,6 @@
 
         form.reset();
         recommendationDate.value = new Date().toISOString().slice(0, 10);
-        if (initialBranchId) branchSelect.value = initialBranchId;
         showMessage(result.message || 'Рекомендация отправлена.', 'ok');
       } catch (error) {
         showMessage('Ошибка отправки. Проверьте интернет и попробуйте еще раз.', 'error');
@@ -306,7 +275,6 @@
       }
     });
 
-    loadBranches();
   </script>
 </body>
 </html>
