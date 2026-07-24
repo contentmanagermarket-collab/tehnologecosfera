@@ -275,14 +275,8 @@
 
     <section class="filters">
       <div>
-        <label for="branchFilter">Объект</label>
-        <select id="branchFilter">
-          <option value="">Все объекты</option>
-        </select>
-      </div>
-      <div>
         <label for="searchInput">Поиск</label>
-        <input id="searchInput" type="text" placeholder="ФИО сотрудника, кандидата, телефон или объект" />
+        <input id="searchInput" type="text" placeholder="ФИО сотрудника, кандидата, телефон или регион" />
       </div>
       <div>
         <label for="statusFilter">Статус</label>
@@ -332,7 +326,6 @@
     let currentReferralId = '';
 
     const hrMeta = document.getElementById('hrMeta');
-    const branchFilter = document.getElementById('branchFilter');
     const statusFilter = document.getElementById('statusFilter');
     const searchInput = document.getElementById('searchInput');
     const list = document.getElementById('list');
@@ -396,7 +389,7 @@
           <div class="card-head">
             <div>
               <h2 style="margin:0 0 6px;font-size:24px;">${escapeHtml(item.friend_name)}</h2>
-              <div style="color:#5f6670;font-size:16px;">${escapeHtml(item.branch_name)} · ${escapeHtml(item.recommendation_date)}</div>
+              <div style="color:#5f6670;font-size:16px;">Регион: ${escapeHtml(item.region || item.branch_name || 'не указан')} · ${escapeHtml(item.recommendation_date)}</div>
             </div>
             <div class="status ${statusClass(item.status)}">${escapeHtml(item.status_label)}</div>
           </div>
@@ -446,15 +439,7 @@
         }
 
         localStorage.setItem('eko_referral_hr_token', token);
-        hrMeta.textContent = `${result.hr.name || 'HR'} · объектов: ${result.branches.length}`;
-
-        branchFilter.innerHTML = '<option value="">Все объекты</option>';
-        result.branches.forEach((branch) => {
-          const option = document.createElement('option');
-          option.value = branch._id;
-          option.textContent = branch.name;
-          branchFilter.appendChild(option);
-        });
+        hrMeta.textContent = result.hr.name || 'HR';
 
         return true;
       } catch (error) {
@@ -469,7 +454,6 @@
       const url = new URL(`${API_BASE}/referral/hr/list`);
       url.searchParams.set('token', token);
       if (statusFilter.value) url.searchParams.set('status', statusFilter.value);
-      if (branchFilter.value) url.searchParams.set('branch_id', branchFilter.value);
       if (searchInput.value.trim()) url.searchParams.set('search', searchInput.value.trim());
 
       try {
