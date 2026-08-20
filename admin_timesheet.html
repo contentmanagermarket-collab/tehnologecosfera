@@ -442,6 +442,8 @@
         <thead>
           <tr>
             <th>Сотрудник</th>
+            <th>Норматив</th>
+            <th>Сверхурочные</th>
             <th>Часы за месяц</th>
             <th>Смен за месяц</th>
           </tr>
@@ -535,6 +537,8 @@
         const tr = document.createElement('tr');
         tr.innerHTML = `
           <td>${escapeHtml(row.employee)}</td>
+          <td>${formatNumber(row.norm_hours)}</td>
+          <td>${formatNumber(row.overtime_hours)}</td>
           <td>${formatNumber(row.hours)}</td>
           <td>${formatNumber(row.shifts)}</td>
         `;
