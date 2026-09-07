@@ -171,6 +171,33 @@
       box-shadow: 0 0 0 4px rgba(150, 194, 44, 0.18);
     }
 
+    .password-wrap {
+      position: relative;
+    }
+
+    .password-wrap input {
+      padding-right: 58px;
+    }
+
+    .password-toggle {
+      position: absolute;
+      right: 8px;
+      top: 50%;
+      width: 42px;
+      min-height: 38px;
+      padding: 0;
+      transform: translateY(-50%);
+      border-radius: 12px;
+      background: #eef5df;
+      color: #4b6420;
+      font-size: 18px;
+      box-shadow: none;
+    }
+
+    .password-toggle:hover {
+      background: #e1efc9;
+    }
+
     .message {
       display: none;
       margin-bottom: 18px;
@@ -430,7 +457,10 @@
       <h1>HR контроль вахт</h1>
       <p class="meta">Введите HR-токен для доступа к объектам</p>
       <label for="tokenInput">Токен</label>
-      <input id="tokenInput" type="password" placeholder="Введите токен" />
+      <div class="password-wrap">
+        <input id="tokenInput" type="password" placeholder="Введите токен" />
+        <button id="toggleTokenButton" class="password-toggle" type="button" aria-label="Показать токен" title="Показать токен">👁</button>
+      </div>
       <button id="loginButton" type="button">Войти</button>
     </section>
 
@@ -535,6 +565,7 @@
     const loginCard = document.getElementById('loginCard');
     const dashboard = document.getElementById('dashboard');
     const tokenInput = document.getElementById('tokenInput');
+    const toggleTokenButton = document.getElementById('toggleTokenButton');
     const loginButton = document.getElementById('loginButton');
     const logoutButton = document.getElementById('logoutButton');
     const allShiftsButton = document.getElementById('allShiftsButton');
@@ -718,13 +749,10 @@
             </div>
           </div>
           <div class="gantt-cell">
-            ${item.raw_status === 'open'
-              ? `<div class="rotation-comment">
-                  <textarea data-comment-input="${item._id}" placeholder="Билеты, текущая работа, заметки HR">${escapeHtml(item.hr_comment || item.open_comment || '')}</textarea>
-                  <button type="button" class="comment-save" data-save-comment="${item._id}">Сохранить</button>
-                </div>`
-              : `<div class="closed-comment ${item.close_comment ? '' : 'muted-comment'}">${escapeHtml(item.close_comment || 'Комментарий не указан')}</div>`
-            }
+            <div class="rotation-comment">
+              <textarea data-comment-input="${item._id}" placeholder="Билеты, текущая работа, заметки HR">${escapeHtml(item.raw_status === 'closed' ? (item.close_comment || item.hr_comment || item.open_comment || '') : (item.hr_comment || item.open_comment || ''))}</textarea>
+              <button type="button" class="comment-save" data-save-comment="${item._id}">Сохранить</button>
+            </div>
           </div>
           <div class="timeline">
             <div class="bar ${statusClass(item)}" style="width:${barWidth};"></div>
@@ -917,6 +945,13 @@
     }
 
     loginButton.addEventListener('click', login);
+    toggleTokenButton.addEventListener('click', () => {
+      const isHidden = tokenInput.type === 'password';
+      tokenInput.type = isHidden ? 'text' : 'password';
+      toggleTokenButton.setAttribute('aria-label', isHidden ? 'Скрыть токен' : 'Показать токен');
+      toggleTokenButton.title = isHidden ? 'Скрыть токен' : 'Показать токен';
+      toggleTokenButton.textContent = isHidden ? '🙈' : '👁';
+    });
     allShiftsButton.addEventListener('click', () => switchViewMode('all'));
     closedOnlyButton.addEventListener('click', () => switchViewMode('closed'));
     refreshButton.addEventListener('click', loadRotations);
