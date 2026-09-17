@@ -188,6 +188,9 @@
       <label for="employee">ФИО сотрудника</label>
       <input id="employee" type="text" autocomplete="name" required placeholder="Введите ФИО полностью" />
 
+      <label for="position">Должность</label>
+      <input id="position" type="text" required placeholder="Введите должность" />
+
       <label for="branchId">Объект</label>
       <select id="branchId" required>
         <option value="">Загрузка объектов...</option>
@@ -296,6 +299,7 @@
 
       const payload = {
         employee: document.getElementById('employee').value.trim(),
+        position: document.getElementById('position').value.trim(),
         branch_id: branchSelect.value,
         start_date: startDate.value,
         duration_days: Number(document.getElementById('durationDays').value),
