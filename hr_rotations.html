@@ -281,6 +281,12 @@
       color: #4f5966;
     }
 
+    .employee-position {
+      margin-top: 3px;
+      font-size: 13px;
+      color: #4f5966;
+    }
+
     .rotation-comment {
       width: 100%;
     }
@@ -529,7 +535,7 @@
               <div class="gantt-cell">Комментарий</div>
               <div class="gantt-cell">Период</div>
               <div class="gantt-cell">Дата начала</div>
-              <div class="gantt-cell">Плановое окончание</div>
+              <div id="endDateHeader" class="gantt-cell">Плановое окончание</div>
               <div class="gantt-cell">Действие</div>
             </div>
             <div id="ganttBody"></div>
@@ -577,6 +583,7 @@
     const employeeSearch = document.getElementById('employeeSearch');
     const message = document.getElementById('message');
     const ganttBody = document.getElementById('ganttBody');
+    const endDateHeader = document.getElementById('endDateHeader');
     const hrMeta = document.getElementById('hrMeta');
 
     const closeModal = document.getElementById('closeModal');
@@ -608,6 +615,7 @@
     function updateModeButtons() {
       allShiftsButton.classList.toggle('active', viewMode === 'all');
       closedOnlyButton.classList.toggle('active', viewMode === 'closed');
+      endDateHeader.textContent = viewMode === 'closed' ? 'Фактическое окончание' : 'Плановое окончание';
     }
 
     function switchViewMode(mode) {
@@ -714,6 +722,8 @@
 
       if (viewMode === 'closed') {
         filtered = filtered.filter((item) => item.raw_status === 'closed' || item.status === 'closed');
+      } else {
+        filtered = filtered.filter((item) => item.raw_status === 'open');
       }
 
       return filtered;
@@ -746,6 +756,7 @@
             <div>
               <div class="employee-name">${escapeHtml(item.employee_name || '-')}</div>
               <div class="employee-branch">${escapeHtml(item.branch_name || '-')}</div>
+              <div class="employee-position">${escapeHtml(item.position || 'Должность не указана')}</div>
             </div>
           </div>
           <div class="gantt-cell">
@@ -762,7 +773,7 @@
             <span class="badge">${item.start_date_display || '-'}</span>
           </div>
           <div class="gantt-cell">
-            <span class="badge ${statusClass(item)}">${item.planned_end_date_display || '-'} · ${item.planned_duration_days} дней</span>
+            <span class="badge ${statusClass(item)}">${item.raw_status === 'closed' ? (item.actual_end_date_display || '-') : `${item.planned_end_date_display || '-'} · ${item.planned_duration_days} дней`}</span>
           </div>
           <div class="gantt-cell action-cell">
             ${item.raw_status === 'open' ? `<button type="button" data-close="${item._id}">Закрыть</button>` : ''}
