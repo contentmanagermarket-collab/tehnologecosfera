@@ -263,6 +263,21 @@
       padding-right: 14px;
     }
 
+    .row-actions {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .row-actions button {
+      width: 100%;
+      min-height: 38px;
+      padding: 8px 10px;
+      border-radius: 12px;
+      font-size: 12px;
+    }
+
     .employee {
       display: block;
       min-width: 0;
@@ -563,6 +578,32 @@
     </div>
   </div>
 
+  <div id="editModal" class="modal">
+    <div class="modal-card">
+      <h2 class="modal-title">Изменить вахту</h2>
+      <div id="editEmployee" class="meta"></div>
+
+      <label for="editStartDate">Дата открытия</label>
+      <input id="editStartDate" type="date" />
+
+      <label for="editDurationDays">Длительность</label>
+      <select id="editDurationDays">
+        <option value="45">45 дней</option>
+        <option value="60">60 дней</option>
+      </select>
+
+      <div id="editActualEndGroup" style="display:none;">
+        <label for="editActualEndDate">Фактическая дата закрытия</label>
+        <input id="editActualEndDate" type="date" />
+      </div>
+
+      <div class="modal-actions">
+        <button id="cancelEditButton" type="button" class="secondary">Отмена</button>
+        <button id="saveEditButton" type="button">Сохранить</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     const API_BASE = 'https://ekosfera.midera.fun/web';
     const params = new URLSearchParams(window.location.search);
@@ -593,9 +634,20 @@
     const cancelCloseButton = document.getElementById('cancelCloseButton');
     const confirmCloseButton = document.getElementById('confirmCloseButton');
 
+    const editModal = document.getElementById('editModal');
+    const editEmployee = document.getElementById('editEmployee');
+    const editStartDate = document.getElementById('editStartDate');
+    const editDurationDays = document.getElementById('editDurationDays');
+    const editActualEndGroup = document.getElementById('editActualEndGroup');
+    const editActualEndDate = document.getElementById('editActualEndDate');
+    const cancelEditButton = document.getElementById('cancelEditButton');
+    const saveEditButton = document.getElementById('saveEditButton');
+
     let token = initialToken;
     let currentRotationId = '';
     let currentRotationPlannedEndDate = '';
+    let currentEditRotationId = '';
+    let currentEditIsClosed = false;
     let currentHrName = '';
     let viewMode = 'all';
 
@@ -776,7 +828,10 @@
             <span class="badge ${statusClass(item)}">${item.raw_status === 'closed' ? (item.actual_end_date_display || '-') : `${item.planned_end_date_display || '-'} · ${item.planned_duration_days} дней`}</span>
           </div>
           <div class="gantt-cell action-cell">
-            ${item.raw_status === 'open' ? `<button type="button" data-close="${item._id}">Закрыть</button>` : ''}
+            <div class="row-actions">
+              <button type="button" class="secondary" data-edit="${item._id}">Изменить</button>
+              ${item.raw_status === 'open' ? `<button type="button" data-close="${item._id}">Закрыть</button>` : ''}
+            </div>
           </div>
         `;
 
@@ -787,6 +842,13 @@
         button.addEventListener('click', () => {
           const item = items.find((entry) => entry._id === button.dataset.close);
           openCloseModal(item);
+        });
+      });
+
+      ganttBody.querySelectorAll('[data-edit]').forEach((button) => {
+        button.addEventListener('click', () => {
+          const item = items.find((entry) => entry._id === button.dataset.edit);
+          openEditModal(item);
         });
       });
 
@@ -915,6 +977,63 @@
       closeModal.classList.remove('open');
     }
 
+    function openEditModal(item) {
+      currentEditRotationId = item._id;
+      currentEditIsClosed = item.raw_status === 'closed';
+      editEmployee.textContent = `${item.employee_name} · ${item.branch_name}`;
+      editStartDate.value = item.start_date || '';
+      editDurationDays.value = String(item.planned_duration_days || 45);
+      editActualEndDate.value = item.actual_end_date || '';
+      editActualEndGroup.style.display = currentEditIsClosed ? 'block' : 'none';
+      editModal.classList.add('open');
+    }
+
+    function closeEditModal() {
+      currentEditRotationId = '';
+      currentEditIsClosed = false;
+      editModal.classList.remove('open');
+    }
+
+    async function saveRotationEdit() {
+      if (!currentEditRotationId) return;
+      if (!editStartDate.value) {
+        alert('Укажите дату открытия.');
+        return;
+      }
+      if (currentEditIsClosed && !editActualEndDate.value) {
+        alert('Укажите фактическую дату закрытия.');
+        return;
+      }
+
+      saveEditButton.disabled = true;
+      saveEditButton.textContent = 'Сохранение...';
+      try {
+        const response = await fetch(`${API_BASE}/rotation/${currentEditRotationId}/edit`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            token,
+            start_date: editStartDate.value,
+            duration_days: Number(editDurationDays.value),
+            actual_end_date: currentEditIsClosed ? editActualEndDate.value : ''
+          })
+        });
+        const result = await response.json();
+        if (!result.success) {
+          throw new Error(result.message || 'Не удалось сохранить изменения.');
+        }
+
+        closeEditModal();
+        showMessage('success', result.message || 'Данные вахты сохранены.');
+        await loadRotations();
+      } catch (error) {
+        alert(error.message);
+      } finally {
+        saveEditButton.disabled = false;
+        saveEditButton.textContent = 'Сохранить';
+      }
+    }
+
     async function closeRotation() {
       if (!currentRotationId) return;
 
@@ -975,6 +1094,8 @@
     });
     cancelCloseButton.addEventListener('click', closeCloseModal);
     confirmCloseButton.addEventListener('click', closeRotation);
+    cancelEditButton.addEventListener('click', closeEditModal);
+    saveEditButton.addEventListener('click', saveRotationEdit);
 
     logoutButton.addEventListener('click', () => {
       localStorage.removeItem('eko_hr_token');
