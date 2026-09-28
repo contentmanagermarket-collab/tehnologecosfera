@@ -583,6 +583,9 @@
       <h2 class="modal-title">Изменить вахту</h2>
       <div id="editEmployee" class="meta"></div>
 
+      <label for="editEmployeeName">ФИО сотрудника</label>
+      <input id="editEmployeeName" type="text" autocomplete="off" />
+
       <label for="editStartDate">Дата открытия</label>
       <input id="editStartDate" type="date" />
 
@@ -636,6 +639,7 @@
 
     const editModal = document.getElementById('editModal');
     const editEmployee = document.getElementById('editEmployee');
+    const editEmployeeName = document.getElementById('editEmployeeName');
     const editStartDate = document.getElementById('editStartDate');
     const editDurationDays = document.getElementById('editDurationDays');
     const editActualEndGroup = document.getElementById('editActualEndGroup');
@@ -980,7 +984,8 @@
     function openEditModal(item) {
       currentEditRotationId = item._id;
       currentEditIsClosed = item.raw_status === 'closed';
-      editEmployee.textContent = `${item.employee_name} · ${item.branch_name}`;
+      editEmployee.textContent = item.branch_name || '';
+      editEmployeeName.value = item.employee_name || '';
       editStartDate.value = item.start_date || '';
       editDurationDays.value = String(item.planned_duration_days || 45);
       editActualEndDate.value = item.actual_end_date || '';
@@ -996,6 +1001,11 @@
 
     async function saveRotationEdit() {
       if (!currentEditRotationId) return;
+      if (!editEmployeeName.value.trim()) {
+        alert('Укажите ФИО сотрудника.');
+        editEmployeeName.focus();
+        return;
+      }
       if (!editStartDate.value) {
         alert('Укажите дату открытия.');
         return;
@@ -1013,6 +1023,7 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             token,
+            employee_name: editEmployeeName.value.trim(),
             start_date: editStartDate.value,
             duration_days: Number(editDurationDays.value),
             actual_end_date: currentEditIsClosed ? editActualEndDate.value : ''
