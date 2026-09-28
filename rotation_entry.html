@@ -92,6 +92,60 @@
       gap: 14px;
     }
 
+    .autocomplete {
+      position: relative;
+    }
+
+    .autocomplete-list {
+      position: absolute;
+      z-index: 10;
+      top: calc(100% + 6px);
+      left: 0;
+      right: 0;
+      display: none;
+      overflow: hidden;
+      border: 1px solid #dfe5d8;
+      border-radius: 14px;
+      background: #ffffff;
+      box-shadow: 0 14px 30px rgba(32, 36, 42, 0.14);
+    }
+
+    .autocomplete-list.open {
+      display: block;
+    }
+
+    button.autocomplete-option {
+      width: 100%;
+      min-height: 48px;
+      margin: 0;
+      padding: 10px 14px;
+      border-radius: 0;
+      border-bottom: 1px solid #edf0e8;
+      background: #ffffff;
+      color: #20242a;
+      text-align: left;
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    button.autocomplete-option:last-child {
+      border-bottom: 0;
+    }
+
+    button.autocomplete-option:hover,
+    button.autocomplete-option:focus {
+      background: #f3f8e9;
+      outline: none;
+    }
+
+    .autocomplete-detail {
+      display: block;
+      margin-top: 3px;
+      color: #5f6670;
+      font-size: 12px;
+      font-weight: 400;
+    }
+
     button {
       width: 100%;
       min-height: 56px;
@@ -182,11 +236,14 @@
   <main class="card">
     <img class="logo" src="logo.png" alt="Экосфера" />
     <h1>ОТКРЫТИЕ ВАХТЫ</h1>
-    <div class="subtitle" id="branchHint">Выберите объект из списка и откройте вахту</div>
+    <div class="subtitle" id="branchHint">Выберите объект и откройте вахту</div>
 
     <form id="rotationForm">
       <label for="employee">ФИО сотрудника</label>
-      <input id="employee" type="text" autocomplete="name" required placeholder="Введите ФИО полностью" />
+      <div class="autocomplete">
+        <input id="employee" type="text" autocomplete="off" required placeholder="Начните вводить фамилию" />
+        <div id="employeeSuggestions" class="autocomplete-list"></div>
+      </div>
 
       <label for="position">Должность</label>
       <input id="position" type="text" required placeholder="Введите должность" />
@@ -219,7 +276,10 @@
       </select>
 
       <label for="openedByName">ФИО открывающего</label>
-      <input id="openedByName" type="text" placeholder="Можно оставить пустым" />
+      <div class="autocomplete">
+        <input id="openedByName" type="text" autocomplete="off" placeholder="Начните вводить фамилию" />
+        <div id="openerSuggestions" class="autocomplete-list"></div>
+      </div>
 
       <label for="comment">Комментарий</label>
       <textarea id="comment" placeholder="Если нужно, добавьте комментарий"></textarea>
@@ -243,6 +303,7 @@
   <script>
     const BACKEND_URL = 'https://ekosfera.midera.fun/web/rotation/open';
     const BRANCHES_URL = 'https://ekosfera.midera.fun/web/rotation/branches';
+    const SUGGESTIONS_URL = 'https://ekosfera.midera.fun/web/rotation/name-suggestions';
 
     const form = document.getElementById('rotationForm');
     const message = document.getElementById('message');
@@ -250,6 +311,9 @@
     const branchHint = document.getElementById('branchHint');
     const branchSelect = document.getElementById('branchId');
     const startDate = document.getElementById('startDate');
+    const employeeInput = document.getElementById('employee');
+    const positionInput = document.getElementById('position');
+    const openedByNameInput = document.getElementById('openedByName');
 
     startDate.value = new Date().toISOString().slice(0, 10);
 
@@ -257,6 +321,80 @@
       message.className = `message ${type}`;
       message.textContent = text;
     }
+
+    function setupAutocomplete(input, list, kind, onSelect) {
+      let requestNumber = 0;
+      let timer = null;
+
+      function close() {
+        list.classList.remove('open');
+        list.innerHTML = '';
+      }
+
+      input.addEventListener('input', () => {
+        clearTimeout(timer);
+        const query = input.value.trim();
+        if (query.length < 2) {
+          close();
+          return;
+        }
+
+        timer = setTimeout(async () => {
+          const currentRequest = ++requestNumber;
+          try {
+            const url = new URL(SUGGESTIONS_URL);
+            url.searchParams.set('q', query);
+            url.searchParams.set('kind', kind);
+            const response = await fetch(url.toString());
+            const result = await response.json();
+            if (currentRequest !== requestNumber || !result.success) return;
+
+            list.innerHTML = '';
+            (result.items || []).forEach((item) => {
+              const option = document.createElement('button');
+              option.type = 'button';
+              option.className = 'autocomplete-option';
+              option.textContent = item.name;
+              if (item.position) {
+                const detail = document.createElement('span');
+                detail.className = 'autocomplete-detail';
+                detail.textContent = item.position;
+                option.appendChild(detail);
+              }
+              option.addEventListener('click', () => {
+                input.value = item.name;
+                onSelect(item);
+                close();
+              });
+              list.appendChild(option);
+            });
+            list.classList.toggle('open', Boolean(list.children.length));
+          } catch (error) {
+            close();
+          }
+        }, 180);
+      });
+
+      input.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') close();
+      });
+      document.addEventListener('click', (event) => {
+        if (!list.parentElement.contains(event.target)) close();
+      });
+    }
+
+    setupAutocomplete(
+      employeeInput,
+      document.getElementById('employeeSuggestions'),
+      'employee',
+      (item) => { if (item.position) positionInput.value = item.position; }
+    );
+    setupAutocomplete(
+      openedByNameInput,
+      document.getElementById('openerSuggestions'),
+      'opener',
+      () => {}
+    );
 
     async function loadBranches() {
       try {
