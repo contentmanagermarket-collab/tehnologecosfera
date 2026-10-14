@@ -259,6 +259,10 @@
       min-width: 0;
     }
 
+    .gantt-cell[data-label]::before {
+      display: none;
+    }
+
     .gantt-cell.action-cell {
       justify-content: flex-end;
       padding-right: 14px;
@@ -468,6 +472,159 @@
       .filters { grid-template-columns: 1fr; }
       .logo { width: 150px; }
       h1 { font-size: 24px; }
+
+      .actions {
+        width: 100%;
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .actions button {
+        width: 100%;
+        white-space: normal;
+      }
+
+      .summary-card {
+        min-height: 92px;
+        padding: 18px;
+      }
+
+      .summary-value {
+        font-size: 27px;
+      }
+
+      .filters,
+      .login-card {
+        padding: 18px;
+      }
+
+      .gantt-card {
+        background: transparent;
+        border-radius: 0;
+        box-shadow: none;
+        overflow: visible;
+      }
+
+      .gantt-scroll {
+        overflow: visible;
+      }
+
+      .gantt-header {
+        display: none;
+      }
+
+      #ganttBody {
+        display: grid;
+        gap: 14px;
+      }
+
+      .gantt-row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        overflow: hidden;
+        border: 1px solid #e5eadd;
+        border-radius: 18px;
+        background: #ffffff;
+        box-shadow: 0 10px 24px rgba(32, 36, 42, 0.06);
+      }
+
+      .gantt-cell,
+      .timeline {
+        width: 100%;
+        min-height: 0;
+        padding: 14px 16px;
+        display: block;
+      }
+
+      .gantt-row > * + * {
+        border-top: 1px solid #edf0e8;
+      }
+
+      .gantt-cell[data-label]::before {
+        content: attr(data-label);
+        display: block;
+        margin-bottom: 9px;
+        color: #667085;
+        font-size: 11px;
+        font-weight: 800;
+        text-transform: uppercase;
+      }
+
+      .employee-name {
+        font-size: 17px;
+      }
+
+      .rotation-comment textarea {
+        min-height: 82px;
+      }
+
+      .comment-save {
+        width: 100%;
+        min-height: 44px;
+        border-radius: 12px;
+      }
+
+      .timeline {
+        position: relative;
+        min-height: 88px;
+        padding-top: 38px;
+        background: #f2f5ec;
+      }
+
+      .timeline::before {
+        position: absolute;
+        top: 13px;
+        left: 16px;
+      }
+
+      .timeline .bar {
+        top: auto;
+        bottom: 16px;
+        left: 16px;
+        transform: none;
+        max-width: calc(100% - 32px);
+      }
+
+      .timeline .bar-label {
+        top: auto;
+        right: 16px;
+        bottom: 16px;
+        left: 16px;
+        transform: none;
+        justify-content: center;
+      }
+
+      .badge {
+        width: 100%;
+        white-space: normal;
+        text-align: center;
+      }
+
+      .gantt-cell.action-cell {
+        padding: 14px 16px 16px;
+      }
+
+      .row-actions {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        gap: 10px;
+      }
+
+      .row-actions button {
+        min-height: 48px;
+        font-size: 14px;
+      }
+
+      .modal {
+        align-items: flex-start;
+        overflow-y: auto;
+        padding: 14px;
+      }
+
+      .modal-card {
+        margin: auto 0;
+        padding: 20px;
+      }
     }
   </style>
 </head>
@@ -809,30 +966,30 @@
         const barWidth = width <= 3 ? '8px' : `calc(${width}% - 40px)`;
 
         row.innerHTML = `
-          <div class="gantt-cell employee">
+          <div class="gantt-cell employee" data-label="Сотрудник">
             <div>
               <div class="employee-name">${escapeHtml(item.employee_name || '-')}</div>
               <div class="employee-branch">${escapeHtml(item.branch_name || '-')}</div>
               <div class="employee-position">${escapeHtml(item.position || 'Должность не указана')}</div>
             </div>
           </div>
-          <div class="gantt-cell">
+          <div class="gantt-cell" data-label="Комментарий">
             <div class="rotation-comment">
               <textarea data-comment-input="${item._id}" placeholder="Билеты, текущая работа, заметки HR">${escapeHtml(item.raw_status === 'closed' ? (item.close_comment || item.hr_comment || item.open_comment || '') : (item.hr_comment || item.open_comment || ''))}</textarea>
               <button type="button" class="comment-save" data-save-comment="${item._id}">Сохранить</button>
             </div>
           </div>
-          <div class="timeline">
+          <div class="gantt-cell timeline" data-label="Период">
             <div class="bar ${statusClass(item)}" style="width:${barWidth};"></div>
             <div class="bar-label">${daysText}</div>
           </div>
-          <div class="gantt-cell">
+          <div class="gantt-cell" data-label="Дата начала">
             <span class="badge">${item.start_date_display || '-'}</span>
           </div>
-          <div class="gantt-cell">
+          <div class="gantt-cell" data-label="${viewMode === 'closed' ? 'Фактическое окончание' : 'Плановое окончание'}">
             <span class="badge ${statusClass(item)}">${item.raw_status === 'closed' ? (item.actual_end_date_display || '-') : `${item.planned_end_date_display || '-'} · ${item.planned_duration_days} дней`}</span>
           </div>
-          <div class="gantt-cell action-cell">
+          <div class="gantt-cell action-cell" data-label="Действия">
             <div class="row-actions">
               <button type="button" class="secondary" data-edit="${item._id}">Изменить</button>
               ${item.raw_status === 'open' ? `<button type="button" data-close="${item._id}">Закрыть</button>` : ''}
