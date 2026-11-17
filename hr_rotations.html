@@ -744,6 +744,9 @@
       <label for="editEmployeeName">ФИО сотрудника</label>
       <input id="editEmployeeName" type="text" autocomplete="off" />
 
+      <label for="editBranchId">Объект</label>
+      <select id="editBranchId"></select>
+
       <label for="editStartDate">Дата открытия</label>
       <input id="editStartDate" type="date" />
 
@@ -798,6 +801,7 @@
     const editModal = document.getElementById('editModal');
     const editEmployee = document.getElementById('editEmployee');
     const editEmployeeName = document.getElementById('editEmployeeName');
+    const editBranchId = document.getElementById('editBranchId');
     const editStartDate = document.getElementById('editStartDate');
     const editDurationDays = document.getElementById('editDurationDays');
     const editActualEndGroup = document.getElementById('editActualEndGroup');
@@ -811,6 +815,7 @@
     let currentEditRotationId = '';
     let currentEditIsClosed = false;
     let currentHrName = '';
+    let availableBranches = [];
     let viewMode = 'all';
 
     tokenInput.value = initialToken;
@@ -893,12 +898,18 @@
     }
 
     function renderBranches(branches) {
+      availableBranches = Array.isArray(branches) ? branches : [];
       branchSelect.innerHTML = '<option value="">Все объекты</option>';
-      branches.forEach((branch) => {
+      editBranchId.innerHTML = '';
+
+      availableBranches.forEach((branch) => {
         const option = document.createElement('option');
         option.value = branch._id || branch.code;
         option.textContent = branch.name;
         branchSelect.appendChild(option);
+
+        const editOption = option.cloneNode(true);
+        editBranchId.appendChild(editOption);
       });
     }
 
@@ -1142,8 +1153,15 @@
     function openEditModal(item) {
       currentEditRotationId = item._id;
       currentEditIsClosed = item.raw_status === 'closed';
-      editEmployee.textContent = item.branch_name || '';
+      editEmployee.textContent = item.employee_name || '';
       editEmployeeName.value = item.employee_name || '';
+      const currentBranch = availableBranches.find((branch) => (
+        branch._id === item.branch_object_id
+        || branch._id === item.branch_id
+        || branch.code === item.branch_id
+        || branch.name === item.branch_name
+      ));
+      editBranchId.value = currentBranch ? (currentBranch._id || currentBranch.code) : '';
       editStartDate.value = item.start_date || '';
       editDurationDays.value = String(item.planned_duration_days || 45);
       editActualEndDate.value = item.actual_end_date || '';
@@ -1168,6 +1186,11 @@
         alert('Укажите дату открытия.');
         return;
       }
+      if (!editBranchId.value) {
+        alert('Выберите объект.');
+        editBranchId.focus();
+        return;
+      }
       if (currentEditIsClosed && !editActualEndDate.value) {
         alert('Укажите фактическую дату закрытия.');
         return;
@@ -1182,6 +1205,7 @@
           body: JSON.stringify({
             token,
             employee_name: editEmployeeName.value.trim(),
+            branch_id: editBranchId.value,
             start_date: editStartDate.value,
             duration_days: Number(editDurationDays.value),
             actual_end_date: currentEditIsClosed ? editActualEndDate.value : ''
